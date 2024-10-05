@@ -28,6 +28,7 @@
     --chart-3: 30 80% 55%;
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
+    --radius: 0.5rem;
   }
 }
 
@@ -36,10 +37,10 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground min-h-svh flex;
+    @apply flex min-h-svh bg-background text-foreground;
   }
   #root {
-    @apply font-manrope flex-1;
+    @apply flex-1 font-manrope;
   }
 }
 
@@ -50,7 +51,7 @@
     background-position-y: 0%, 0%;
     background-repeat: repeat, repeat;
     background-attachment: scroll, scroll;
-    background-image: url('/noise.png'),
+    background-image: url("/noise.png"),
       radial-gradient(
         circle at right center,
         rgb(86, 50, 119),
@@ -63,7 +64,7 @@
     background-clip: border-box, border-box;
 
     @media (min-width: 1024px) {
-      background-image: url('/noise.png'),
+      background-image: url("/noise.png"),
         radial-gradient(
           circle at right center,
           rgba(75, 41, 105, 0.5),
@@ -81,6 +82,11 @@
       #0000
     );
 
-    mask-image: radial-gradient(ellipse 150% 30% at center center, #000 20%, #00000080 50%, #0000);
+    mask-image: radial-gradient(
+      ellipse 150% 30% at center center,
+      #000 20%,
+      #00000080 50%,
+      #0000
+    );
   }
 }
