@@ -1,17 +1,15 @@
-import mongoose from "mongoose";
-
-const typeObjectId = mongoose.Schema.Types.ObjectId;
+import mongoose from 'mongoose';
 
 // Creating message model
 const messageModel = mongoose.Schema(
   {
-    sender: { type: typeObjectId, ref: "User" },
-    chat: { type: typeObjectId, ref: "Chat" },
+    sender: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    chat: { type: mongoose.Schema.Types.ObjectId, ref: 'Chat' },
     text: { type: String, trim: true },
   },
   { timestamps: true }
 );
 
-const Message = mongoose.model("Message", messageModel);
+const Message = mongoose.model('Message', messageModel);
 
 export default Message;
