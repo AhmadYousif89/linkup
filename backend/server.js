@@ -3,6 +3,7 @@ import dotenv from 'dotenv';
 import connectDB from './config/db.js';
 import { clerkMiddleware } from '@clerk/express';
 import userRouter from './routes/userRoutes.js';
+import chatRouter from './routes/chatRoutes.js';
 
 // Setup the environment, server, and database
 dotenv.config();
@@ -19,7 +20,8 @@ app.get('/api', (req, res) => {
 });
 
 // User routes API
-app.use('/api/', userRouter);
+app.use('/api/user/', userRouter);
+app.use('/api/chat/', chatRouter);
 
 // Confirm start to the console
 app.listen(port, console.log(`Server listening on port ${port}`));
