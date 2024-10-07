@@ -67,7 +67,7 @@ export default {
           to: { opacity: "var(--to-bg-opacity)" },
         },
         slideDown: {
-          from: { transform: "translateY(-50%)" },
+          from: { transform: "translateY(-25%)" },
           to: { transform: "translateY(0)" },
         },
       },

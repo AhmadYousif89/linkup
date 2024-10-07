@@ -18,7 +18,7 @@ export function HeroSection() {
       </p>
       {/* Hero content */}
       <div className="mx-auto max-w-screen-md py-16 text-center">
-        <h1 className="animate-slideDown grid pb-4 text-4xl font-bold leading-normal text-white md:text-5xl md:leading-normal">
+        <h1 className="grid animate-slideDown pb-4 text-4xl font-bold leading-normal text-white md:text-5xl md:leading-normal">
           <span className="bg-gradient-to-b from-indigo-400 to-primary bg-clip-text text-transparent">
             LinkUp Chat App
           </span>
@@ -59,7 +59,7 @@ export function HeroSection() {
         </div>
       </div>
       {/* Hero background image */}
-      <div className="hero-bg animate-fadeIn absolute inset-x-0 bottom-[-60%] top-[-40%] z-[-1] [--to-bg-opacity:.5] lg:[--to-bg-opacity:.8]"></div>
+      <div className="hero-bg absolute inset-x-0 bottom-[-60%] top-[-40%] z-[-1] animate-fadeIn [--to-bg-opacity:.6] lg:[--to-bg-opacity:.8]"></div>
     </section>
   );
 }
