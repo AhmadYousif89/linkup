@@ -3,11 +3,13 @@ import Chat from '../models/chatModels.js';
 import User from '../models/userModel.js';
 
 class ChatController {
+  // Views chat with a certain user, require userId
   static accessChat = asyncHandler(async (req, res) => {
     const { userId } = req.body;
     if (!userId) {
       return res.status(400).json({ error: 'userId not found' });
     }
+    // Search for chats that has the userId
     let isChat = await Chat.find({
       isGroupChat: false,
       $and: [
@@ -24,8 +26,10 @@ class ChatController {
     });
 
     if (isChat.length > 0) {
+      // If there are chats, then send them
       res.send(isChat[0]);
     } else {
+      // If there are no chats, then create one
       let chatData = {
         chatName: 'sender',
         isGroupChat: false,
@@ -48,6 +52,7 @@ class ChatController {
 
   static fetchChat = asyncHandler(async (req, res) => {
     try {
+      // Search for chats for our user
       Chat.find({ users: { $elemMatch: { $eq: req.user._id } } })
         .populate('users', '-password')
         .populate('groupAdmin', '-password')
