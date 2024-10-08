@@ -1,3 +1,4 @@
+/* eslint-disable indent */
 import asyncHandler from 'express-async-handler';
 import User from '../models/userModel.js';
 import generateToken from '../config/generateToken.js';
@@ -5,6 +6,7 @@ import generateToken from '../config/generateToken.js';
 class UserController {
   // Register a new user, take what is required from the body
   // name, email, and password, email MUST be unique
+  // post /api/user/signup
   static registerUser = asyncHandler(async (req, res) => {
     const { name, email, password, pic } = req.body;
 
@@ -53,6 +55,7 @@ class UserController {
   });
 
   // Check the authentication, Login method
+  // post /api/user/login
   static authUser = asyncHandler(async (req, res) => {
     const { email, password } = req.body;
 
@@ -76,6 +79,23 @@ class UserController {
       console.error('Invalid email or password');
       return res.status(401).json({ error: 'Invalid email or password' });
     }
+  });
+
+  // Search for user using query
+  // /api/user?search=John
+  static allUsers = asyncHandler(async (req, res) => {
+    const keyword = req.query.search
+      ? {
+          $or: [
+            { name: { $regex: req.query.search, $options: 'i' } },
+            { email: { $regex: req.query.search, $options: 'i' } },
+          ],
+        }
+      : {};
+    const users = await User.find(keyword)
+      .find({ _id: { $ne: req.user._id } })
+      .select('-password');
+    res.send(users);
   });
 }
 
