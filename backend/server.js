@@ -3,6 +3,7 @@ import dotenv from 'dotenv';
 import connectDB from './config/db.js';
 import userRouter from './routes/userRoutes.js';
 import chatRouter from './routes/chatRoutes.js';
+import messageRouter from './routes/messageRoutes.js';
 import AppHandlers from './middleware/errorMiddleware.js';
 
 // Setup the environment, server, and database
@@ -28,6 +29,7 @@ app.get('/error-route', (req, res, next) => {
 // User routes API
 app.use('/api/user/', userRouter);
 app.use('/api/chat/', chatRouter);
+app.use('/api/message/', messageRouter);
 
 // Error handler
 app.use(AppHandlers.urlNotFound);
