@@ -10,6 +10,12 @@ class ChatController {
     if (!userId) {
       return res.status(400).json({ error: 'userId not found' });
     }
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(400).json({ error: 'User not found' });
+    }
+
     if (req.user._id.toString() === userId) {
       console.log('Cannot create chat with yourself');
       return res
@@ -34,7 +40,7 @@ class ChatController {
 
     if (isChat.length > 0) {
       // If there are chats, then send them
-      res.send(isChat[0]);
+      res.json(isChat[0]);
     } else {
       // If there are no chats, then create one
       let chatData = {
@@ -71,7 +77,7 @@ class ChatController {
             path: 'latestMessage.sender',
             select: 'name pic email',
           });
-          return res.status(200).send(results);
+          return res.status(200).json(results);
         });
     } catch (error) {
       console.log(error);
@@ -80,7 +86,7 @@ class ChatController {
   });
 
   // Create a new group chat
-  // require name of the group and the users (min 3 including the current user)
+  // require name of the group and the users ids (min 3 including the current user)
   // post /api/chat/group
   static createGroupChat = asyncHandler(async (req, res) => {
     if (!req.body.users || !req.body.name) {
@@ -88,21 +94,23 @@ class ChatController {
     }
 
     // Check if all users exist
-    let users = JSON.parse(req.body.users);
-    if (users.length < 2) {
+    let usersIds = JSON.parse(req.body.users);
+    // Add logged in user to users list
+    usersIds.push(req.user._id.toString());
+    // Remove any duplicates
+    usersIds = [...new Set(usersIds)];
+
+    if (usersIds.length < 3) {
       console.log('Please select at least 3 users for the group chat');
       return res
         .status(400)
         .json({ error: 'Please select at least 3 users for the group chat' });
     }
 
-    // Add logged in user to users list
-    users.push(req.user);
-
     try {
       const groupChat = await Chat.create({
         chatName: req.body.name,
-        users: users,
+        users: usersIds,
         isGroupChat: true,
         groupAdmin: req.user,
       });
@@ -122,7 +130,11 @@ class ChatController {
   // require chatId and chatName
   // put /api/chat/rename
   static renameGroupChat = asyncHandler(async (req, res) => {
-    const { chatId, chatName } = req.body;
+    const { chatId } = req.body;
+    let { chatName } = req.body;
+    if (!chatId) {
+      return res.status(400).json({ error: 'Please enter chat id' });
+    }
 
     const group = await Chat.findById(chatId);
 
@@ -131,11 +143,24 @@ class ChatController {
       return res.status(400).json({ error: 'Chat not found' });
     }
 
+    // Check if the chat is not a group
+    if (!group.isGroupChat) {
+      console.log('Cannot change name of DM');
+      return res
+        .status(400)
+        .json({ error: 'Cannot change name of private chat' });
+    }
+
     // Check if user in the group
     if (!group.users.includes(req.user._id.toString())) {
       console.log('You are not in the group');
       return res.status(400).json({ error: 'You are not in the group' });
     }
+
+    if (!chatName || chatName.trim() === '') {
+      chatName = 'Unnamed Group';
+    }
+
     const updatedChat = await Chat.findByIdAndUpdate(
       chatId,
       {
@@ -161,11 +186,28 @@ class ChatController {
 ChatController.addToGroup = asyncHandler(async (req, res) => {
   const { chatId, userId } = req.body;
 
+  if (!userId) {
+    console.log('Please enter userId');
+    return res.status(400).json({ error: 'Please enter userId' });
+  }
+
+  const isUser = await User.findById(userId);
+  if (!isUser) {
+    console.log('Cannot find user');
+    return res.status(400).json({ error: 'Cannot find user' });
+  }
+
   const group = await Chat.findById(chatId);
 
   if (!group) {
     console.log('Chat not found');
     return res.status(400).json({ error: 'Chat not found' });
+  }
+
+  // Check if the chat is not a group
+  if (!group.isGroupChat) {
+    console.log('Cannot add to a DM');
+    return res.status(400).json({ error: 'Cannot add to a private chat' });
   }
 
   // Check if user in the group
@@ -189,12 +231,7 @@ ChatController.addToGroup = asyncHandler(async (req, res) => {
     .populate('users', '-password')
     .populate('groupAdmin', '-password');
 
-  if (!added) {
-    console.log('Chat not found');
-    return res.status(400).json({ error: 'Chat not found' });
-  } else {
-    res.status(200).json(added);
-  }
+  return res.status(200).json(added);
 });
 
 // Remove from group
@@ -202,6 +239,11 @@ ChatController.addToGroup = asyncHandler(async (req, res) => {
 // put /api/chat/groupremove
 ChatController.removeFromGroup = asyncHandler(async (req, res) => {
   const { chatId, userId } = req.body;
+
+  if (!userId) {
+    console.log('Please enter userId');
+    return res.status(400).json({ error: 'Please enter userId' });
+  }
 
   let group = await Chat.findById(chatId);
 
@@ -218,6 +260,12 @@ ChatController.removeFromGroup = asyncHandler(async (req, res) => {
     return res
       .status(400)
       .json({ error: 'Only the group admin can remove from group' });
+  }
+
+  const isUser = await User.findById(userId);
+  if (!isUser) {
+    console.log('Cannot find user');
+    return res.status(400).json({ error: 'Cannot find user' });
   }
 
   if (userId === req.user._id.toString()) {
@@ -272,14 +320,9 @@ ChatController.deleteGroup = asyncHandler(async (req, res) => {
   }
 
   const deletedChat = await Chat.findByIdAndDelete(chatId);
-  if (!deletedChat) {
-    console.log('Chat not found');
-    return res.status(400).json({ error: 'Chat not found' });
-  } else {
-    res.status(200).json({
-      message: `chat ${deletedChat.chatName} ${deletedChat._id} deleted successfully`,
-    });
-  }
+  return res.status(200).json({
+    message: `chat ${deletedChat.chatName} ${deletedChat._id} deleted successfully`,
+  });
 });
 
 // Quit group
@@ -296,12 +339,18 @@ ChatController.quitGroup = asyncHandler(async (req, res) => {
     return res.status(400).json({ error: 'Chat not found' });
   }
 
+  // Check if the chat is not a group
+  if (!group.isGroupChat) {
+    console.log('Cannot quit from a DM');
+    return res.status(400).json({ error: 'Cannot quit from a private chat' });
+  }
+
   group.populate('groupAdmin', '_id');
 
   // Check if user in the group
   if (!group.users.includes(user._id.toString())) {
-    console.log('User is not in this group');
-    return res.status(400).json({ error: 'User is not in this group' });
+    console.log('You are not in this group');
+    return res.status(400).json({ error: 'You are not in this group' });
   }
 
   // Check if the user is groupAdmin and there are still users in chat
@@ -313,7 +362,7 @@ ChatController.quitGroup = asyncHandler(async (req, res) => {
       (member) => member.toString() !== group.groupAdmin._id.toString()
     );
     const firstMember = await User.findById(firstMemberId);
-    const updatedGroup = await Chat.findByIdAndUpdate(
+    await Chat.findByIdAndUpdate(
       chatId,
       {
         $set: { groupAdmin: firstMemberId },
@@ -321,30 +370,24 @@ ChatController.quitGroup = asyncHandler(async (req, res) => {
       },
       { new: true }
     );
-    if (!updatedGroup) {
-      console.log('Chat not found');
-      return res.status(400).json({ error: 'Chat not found' });
-    } else {
-      return res.status(200).json({
-        message: `removed from ${group.chatName} successfully, new admin is ${firstMember.name}`,
-      });
-    }
+
+    return res.status(200).json({
+      message: `removed from ${group.chatName} successfully, new admin is ${firstMember.name}`,
+    });
+  } else if (group.users.length === 1) {
+    return ChatController.deleteGroup(req, res);
   } else {
-    const removed = await Chat.findByIdAndUpdate(
+    await Chat.findByIdAndUpdate(
       chatId,
       {
         $pull: { users: user._id },
       },
       { new: true }
     );
-    if (!removed) {
-      console.log('Chat not found');
-      return res.status(400).json({ error: 'Chat not found' });
-    } else {
-      return res
-        .status(200)
-        .json({ message: `removed from ${group.chatName} successfully` });
-    }
+
+    return res
+      .status(200)
+      .json({ message: `removed from ${group.chatName} successfully` });
   }
 });
 

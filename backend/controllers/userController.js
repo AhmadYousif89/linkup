@@ -94,7 +94,8 @@ class UserController {
       : {};
     const users = await User.find(keyword)
       .find({ _id: { $ne: req.user._id } })
-      .select('-password');
+      .select('-password')
+      .select('-__v');
     res.send(users);
   });
 }
