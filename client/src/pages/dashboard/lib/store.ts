@@ -6,6 +6,6 @@ type ProfilePanelState = {
 };
 
 export const useProfilePanelStore = create<ProfilePanelState>((set) => ({
-  isOpen: false,
+  isOpen: window.innerWidth > 1024 ? true : false,
   setIsOpen: (isOpen) => set({ isOpen }),
 }));
