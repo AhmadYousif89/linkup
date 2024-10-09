@@ -3,8 +3,11 @@ import { SparklesIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { GithubIcon } from "@/components/icons/github_icon";
+import { useUser } from "@clerk/clerk-react";
 
 export function HeroSection() {
+  const { user } = useUser();
+
   return (
     <section className="relative mt-16 grid min-h-[80svh]">
       <p className="absolute left-1/2 mb-4 flex w-full max-w-xs -translate-x-1/2 cursor-default items-center justify-center rounded-full border bg-gradient-to-br from-transparent to-secondary py-1.5">
@@ -39,9 +42,18 @@ export function HeroSection() {
           <Button
             size={"lg"}
             variant={"ghost"}
-            className="h-10 w-28 rounded-lg border border-primary bg-gradient-to-br from-primary/10 via-muted/10 to-indigo-500 font-semibold shadow hover:bg-muted/20"
+            className="h-10 w-28 rounded-lg border border-primary bg-gradient-to-br from-primary/10 via-muted/10 to-indigo-500 p-0 font-semibold shadow hover:bg-muted/20"
           >
-            <Link to="/signup">Join now</Link>
+            {user ? (
+              <Link
+                to="/dashboard"
+                className="flex size-full items-center justify-center"
+              >
+                Dashboard
+              </Link>
+            ) : (
+              <Link to="/sign-up">Join now</Link>
+            )}
           </Button>
           <Button
             variant={"ghost"}

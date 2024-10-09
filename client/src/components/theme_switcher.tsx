@@ -13,10 +13,10 @@ export function ThemeSwitcher() {
   return (
     <Switch
       className="data-[state=checked]:bg-indigo-400"
-      checked={theme === "dark"}
+      checked={theme === "light"}
       onCheckedChange={handleThemeChange}
     >
-      {theme === "light" ? (
+      {theme === "dark" ? (
         <Moon className="size-3" />
       ) : (
         <Sun className="size-3" />
