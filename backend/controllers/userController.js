@@ -4,6 +4,50 @@ import User from '../models/userModel.js';
 import generateToken from '../config/generateToken.js';
 
 class UserController {
+  // sign up or in a user with clerk
+  // need id from clerk, email, fullname, and maybe a pic
+  // get /api/user/clerk
+  static getClerkUser = asyncHandler(async (req, res) => {
+    const { id, email, fullName, image } = req.body;
+    console.log({
+      id,
+      email,
+      fullName,
+      image,
+    });
+
+    // If user is registered, sign him in
+    const existingUser = await User.findOne({ email });
+
+    if (existingUser) {
+      return res.status(200).json({
+        id: existingUser._id,
+        clerkId: existingUser.clerkId,
+        token: generateToken(existingUser._id),
+      });
+    }
+
+    // Create a new user
+    const user = await User.create({
+      clerkId: id,
+      name: fullName,
+      email,
+      password: '',
+      pic: image,
+    });
+
+    if (user) {
+      res.status(201).json({
+        id: user._id,
+        clerkId: user._id,
+        token: generateToken(user._id),
+      });
+    } else {
+      console.error('Failed to create the user');
+      return res.status(400).json({ error: 'Failed to create the user' });
+    }
+  });
+
   // Register a new user, take what is required from the body
   // name, email, and password, email MUST be unique
   // post /api/user/signup
@@ -94,9 +138,18 @@ class UserController {
       : {};
     const users = await User.find(keyword)
       .find({ _id: { $ne: req.user._id } })
-      .select('-password')
-      .select('-__v');
-    res.send(users);
+      .select('_id name email pic')
+      .lean()
+      .exec();
+
+    const filteredUsers = users.map((user) => ({
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      image: user.pic,
+    }));
+
+    return res.status(200).json(filteredUsers);
   });
 }
 

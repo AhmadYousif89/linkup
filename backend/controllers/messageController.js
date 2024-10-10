@@ -15,6 +15,26 @@ class MessageController {
       return res.status(400).json('Invalid data passed into request');
     }
 
+    // check if chat exist and if user in it
+    try {
+      const chat = await Chat.findById(chatId).populate('users', '_id');
+
+      if (!chat) {
+        console.log('Chat not found');
+        return res.status(400).json('Chat not found');
+      } else if (
+        !chat.users.find(
+          (user) => user._id.toString() === req.user._id.toString()
+        )
+      ) {
+        console.log('User not found in chat');
+        return res.status(400).json('User not found in chat');
+      }
+    } catch (error) {
+      console.log(`Error: Chat not found, ${error.message}`);
+      return res.status(400).json('Error: Chat not found');
+    }
+
     let newMessage = {
       sender: req.user._id,
       content: content,
