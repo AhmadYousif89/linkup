@@ -1,25 +1,48 @@
-import { cn } from "@/lib/utils";
+import { cn, formatDate } from "@/lib/utils";
 import { useProfilePanelStore } from "./lib/store";
 import { Button } from "@/components/ui/button";
 import {
   Clock,
-  EllipsisVertical,
+  Video,
   Phone,
   PanelRightClose,
-  Video,
+  EllipsisVertical,
 } from "lucide-react";
 import { usePreventScroll } from "@/hooks/use_prevent_scroll";
 
 export function ProfilePanel() {
-  const { isOpen, setIsOpen } = useProfilePanelStore();
+  const { isOpen, setIsOpen, userProfile } = useProfilePanelStore();
   const preventWindowScroll = isOpen && window.innerWidth < 768;
   usePreventScroll(preventWindowScroll);
+
+  let profileContent = null;
+  if (!userProfile) {
+    profileContent = (
+      <div className="flex justify-center">
+        <p className="mt-16 font-semibold text-muted-foreground">
+          Select a member to view profile
+        </p>
+      </div>
+    );
+  }
+
+  const profileName = userProfile?.name || "Anonymous";
+  const profileNameInitials = userProfile
+    ? userProfile.name
+        .split(" ")
+        .map((letter, index) => index < 2 && letter[0])
+        .join(".")
+    : "J.D";
+
+  const profileDate = userProfile?.date
+    ? formatDate(userProfile.date) + " - (GMT)"
+    : "";
 
   return (
     <>
       {/* Backdrop Overlay */}
       <div
-        onClick={() => setIsOpen(!open)}
+        onClick={() => setIsOpen(!isOpen)}
         className={cn([
           "fixed left-0 z-[100] size-full bg-muted-foreground/50 backdrop-blur-sm transition ease-in-out",
           "md:hidden",
@@ -48,50 +71,59 @@ export function ProfilePanel() {
             <PanelRightClose />
           </Button>
         </header>
+        {profileContent ? (
+          profileContent
+        ) : (
+          <div className="flex flex-col px-4 py-8 sm:px-8">
+            <div className="flex size-52 items-center justify-center self-center overflow-hidden rounded-md bg-muted/90 shadow-lg">
+              <img
+                src={userProfile?.image}
+                alt={profileNameInitials}
+                className="aspect-square object-cover p-2"
+              />
+            </div>
+            {/* User Info */}
+            <div className="mt-8">
+              <p className="text-sm text-muted-foreground">
+                {profileNameInitials}
+              </p>
+              <h3 className="text-sm font-semibold text-muted lg:text-base">
+                {profileName}
+              </h3>
+              <div className="mt-4 flex items-center gap-2">
+                <Clock className="size-4 text-muted-foreground" />
+                <span className="text-xs text-muted-foreground">
+                  {profileDate || "6:00 AM - 2:00 PM (GMT)"}
+                </span>
+              </div>
+            </div>
+            {/* User Actions */}
+            <div className="mt-8 flex gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                className="flex-1 gap-2 bg-primary text-xs text-secondary"
+              >
+                <Phone className="size-4" /> Voice Call
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="flex-1 gap-2 bg-primary text-xs text-secondary"
+              >
+                <Video className="size-4" /> Huddle
+              </Button>
 
-        <div className="flex flex-col px-4 py-8 sm:px-8">
-          <div className="flex aspect-square size-52 items-center justify-center self-center rounded-md bg-muted/90 shadow-lg">
-            J.D
-          </div>
-          {/* User Info */}
-          <div className="mt-8">
-            <h3 className="text-sm font-semibold text-muted lg:text-base">
-              John Doe
-            </h3>
-            <p className="text-xs text-muted-foreground">Software Engineer</p>
-            <div className="mt-4 flex items-center gap-2">
-              <Clock className="size-4 text-muted-foreground" />
-              <span className="text-xs text-muted-foreground">
-                6:00 AM - 2:00 PM (GMT)
-              </span>
+              <Button
+                size="sm"
+                variant="outline"
+                className="ml-auto size-9 rounded border-muted-foreground bg-primary p-0 text-xs text-muted-foreground hover:border-secondary hover:bg-primary hover:text-secondary"
+              >
+                <EllipsisVertical />
+              </Button>
             </div>
           </div>
-          {/* User Actions */}
-          <div className="mt-8 flex gap-2">
-            <Button
-              size="sm"
-              variant="outline"
-              className="flex-1 gap-2 bg-primary text-xs text-secondary"
-            >
-              <Phone className="size-4" /> Voice Call
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              className="flex-1 gap-2 bg-primary text-xs text-secondary"
-            >
-              <Video className="size-4" /> Huddle
-            </Button>
-
-            <Button
-              size="sm"
-              variant="outline"
-              className="ml-auto size-9 rounded border-muted-foreground bg-primary p-0 text-xs text-muted-foreground hover:border-secondary hover:bg-primary hover:text-secondary"
-            >
-              <EllipsisVertical />
-            </Button>
-          </div>
-        </div>
+        )}
       </section>
     </>
   );

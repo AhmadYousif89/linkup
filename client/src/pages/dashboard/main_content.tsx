@@ -41,16 +41,16 @@ export function MainContent() {
           </div>
         </div>
         {/* Chat Tools */}
-        <div className="flex items-center gap-4 lg:gap-8">
+        <div className="flex items-center gap-4">
           <Button
             size={"icon"}
-            className="size-6 p-1 text-muted-foreground hover:text-muted lg:size-8"
+            className="size-6 p-1 text-muted-foreground hover:text-muted lg:size-7"
           >
             <Video />
           </Button>
           <Button
             size={"icon"}
-            className="size-6 p-1 text-muted-foreground hover:text-muted lg:size-8"
+            className="size-6 p-1 text-muted-foreground hover:text-muted lg:size-7"
           >
             <Phone />
           </Button>
@@ -58,7 +58,7 @@ export function MainContent() {
             size={"icon"}
             aria-pressed={isOpen}
             onClick={() => setIsOpen(!isOpen)}
-            className="size-5 p-0 lg:size-8"
+            className="size-5 p-0 lg:size-7"
           >
             <Info className={isOpen ? "text-muted" : "text-muted-foreground"} />
           </Button>
