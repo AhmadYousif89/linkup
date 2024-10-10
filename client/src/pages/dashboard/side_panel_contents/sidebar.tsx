@@ -6,24 +6,24 @@ import {
   Component,
   LogOut,
   Mail,
+  User,
   UsersRound,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ThemeSwitcher } from "@/components/theme_switcher";
+import { Tab, useActiveTabStore } from "../lib/store";
 
 const triggers = [
+  { value: "AddFriend", icon: User, label: "Connect" },
   { value: "Messages", icon: Mail, label: "DMs" },
   { value: "Rooms", icon: Component, label: "Rooms" },
   { value: "Groups", icon: UsersRound, label: "Groups" },
   { value: "More", icon: CircleEllipsis, label: "More" },
 ];
 
-type SideBarProps = {
-  activeTab: string;
-  setActiveTab: React.Dispatch<React.SetStateAction<string>>;
-};
+export function SideBar() {
+  const { activeTab, setActiveTab } = useActiveTabStore();
 
-export function SideBar({ activeTab, setActiveTab }: SideBarProps) {
   return (
     <div
       className={cn(
@@ -47,7 +47,7 @@ export function SideBar({ activeTab, setActiveTab }: SideBarProps) {
           <div key={value} className="flex flex-col items-center gap-1">
             <Button
               onClick={() =>
-                setActiveTab((prevValue) => (prevValue === value ? "" : value))
+                setActiveTab(value === activeTab ? "" : (value as Tab))
               }
               data-state={activeTab === value ? "active" : "inactive"}
               className="group size-8 bg-primary p-1.5 text-muted-foreground duration-300 ease-in-out hover:text-muted data-[state=active]:bg-indigo-600"
