@@ -6,12 +6,12 @@ const userModel = mongoose.Schema(
   {
     name: { type: String, trim: true },
     email: { type: String, trim: true, unique: true },
-    password: { type: String, trim: true },
+    clerkId: { type: String, trim: true, unique: true },
     pic: {
       type: String,
       default:
         // OK
-        'https://cdn.discordapp.com/attachments/439533593430196236/1292369607113310219/ok-rammus.png?ex=67037c7d&is=67022afd&hm=4c5986823ec7e90d6185038f710a5beead64d686b59ec9c16b0214b961880a3c&',
+        'https://images-wixmp-ed30a86b8c4ca887773594c2.wixmp.com/f/eba2e93e-e25f-4528-8235-27eb869406ab/dcde5qi-1143cbac-e833-45a9-b78e-5e63cddc88f6.png/v1/fill/w_970,h_823/rammus__okay__by_ieket_dcde5qi-pre.png?token=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ1cm46YXBwOjdlMGQxODg5ODIyNjQzNzNhNWYwZDQxNWVhMGQyNmUwIiwiaXNzIjoidXJuOmFwcDo3ZTBkMTg4OTgyMjY0MzczYTVmMGQ0MTVlYTBkMjZlMCIsIm9iaiI6W1t7ImhlaWdodCI6Ijw9ODY5IiwicGF0aCI6IlwvZlwvZWJhMmU5M2UtZTI1Zi00NTI4LTgyMzUtMjdlYjg2OTQwNmFiXC9kY2RlNXFpLTExNDNjYmFjLWU4MzMtNDVhOS1iNzhlLTVlNjNjZGRjODhmNi5wbmciLCJ3aWR0aCI6Ijw9MTAyNCJ9XV0sImF1ZCI6WyJ1cm46c2VydmljZTppbWFnZS5vcGVyYXRpb25zIl19.dPQhEEH2B3SNkLasPCmWhYDfGeqZ6ybDNlssOVMiNRc',
     },
   },
   { timestamps: true }

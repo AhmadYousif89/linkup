@@ -8,8 +8,11 @@ const router = Router();
 // Views chat with a certain user, require userId
 router.post('/', verifyToken, ChatController.accessChat);
 
-// Search for chats for our user
-router.get('/', verifyToken, ChatController.fetchChat);
+// Search for private chats for our user
+router.get('/', verifyToken, ChatController.fetchPrivateChats);
+
+// Search for group chats for our user
+router.get('/group', verifyToken, ChatController.fetchGroupChats);
 
 // Create a group chat
 router.post('/group', verifyToken, ChatController.createGroupChat);
