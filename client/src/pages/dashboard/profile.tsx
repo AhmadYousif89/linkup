@@ -1,3 +1,4 @@
+import { motion, AnimatePresence } from "framer-motion";
 import { cn, formatDate } from "@/lib/utils";
 import { useProfilePanelStore } from "./lib/store";
 import { Button } from "@/components/ui/button";
@@ -8,12 +9,9 @@ import {
   PanelRightClose,
   EllipsisVertical,
 } from "lucide-react";
-import { usePreventScroll } from "@/hooks/use_prevent_scroll";
 
 export function ProfilePanel() {
   const { isOpen, setIsOpen, userProfile } = useProfilePanelStore();
-  const preventWindowScroll = isOpen && window.innerWidth < 768;
-  usePreventScroll(preventWindowScroll);
 
   let profileContent = null;
   if (!userProfile) {
@@ -41,28 +39,34 @@ export function ProfilePanel() {
   return (
     <>
       {/* Backdrop Overlay */}
-      <div
-        onClick={() => setIsOpen(!isOpen)}
-        className={cn([
-          "fixed left-0 z-[100] size-full bg-muted-foreground/50 backdrop-blur-sm transition ease-in-out",
-          "md:hidden",
-          isOpen
-            ? "translate-x-0 duration-300"
-            : "translate-x-full duration-500",
-        ])}
-      />
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            animate={{ x: 0 }}
+            exit={{ x: "100%" }}
+            initial={{ x: "100%" }}
+            transition={{ duration: 0.2 }}
+            onClick={() => setIsOpen(!isOpen)}
+            className={cn([
+              "fixed inset-0 z-20 size-full overflow-hidden bg-muted-foreground/50 backdrop-blur-sm md:hidden",
+            ])}
+          />
+        )}
+      </AnimatePresence>
 
       {/* Profile Panel */}
       <section
         className={cn(
-          "fixed right-0 top-0 z-[170] h-screen bg-primary transition-all duration-500 ease-in-out max-sm:w-[calc(100%-10rem)] md:sticky",
+          "fixed right-0 z-30 h-screen overflow-hidden lg:h-[calc(100vh-4rem)]",
+          "transition-all duration-500 ease-in-out md:relative md:max-w-xs",
+          "border-muted-foreground bg-primary",
           isOpen
-            ? "min-w-80 translate-x-0 md:visible md:opacity-100"
-            : "translate-x-full overflow-hidden max-sm:min-w-0 md:invisible md:w-0 md:translate-x-0 md:opacity-0",
+            ? "[transform 700ms cubic-bezier(0.34, 1.35, 0.64, 1)] visible min-w-80 max-md:translate-x-0 xl:min-w-96"
+            : "invisible min-w-0 max-md:translate-x-full md:max-w-0",
         )}
       >
-        <header className="flex h-16 items-center justify-between gap-4 border-b border-muted-foreground">
-          <h2 className="px-4 font-semibold text-muted">Profile</h2>
+        <header className="flex h-16 items-center justify-between gap-4 border-b border-muted-foreground px-4">
+          <h2 className="font-semibold text-muted">Profile</h2>
           <Button
             size="icon"
             onClick={() => setIsOpen(!isOpen)}
@@ -77,7 +81,7 @@ export function ProfilePanel() {
           <div className="flex flex-col px-4 py-8 sm:px-8">
             <div className="flex size-52 items-center justify-center self-center overflow-hidden rounded-md bg-muted/90 shadow-lg">
               <img
-                src={userProfile?.image}
+                src={userProfile?.image || "/user.png"}
                 alt={profileNameInitials}
                 className="aspect-square object-cover p-2"
               />

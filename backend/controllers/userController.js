@@ -9,14 +9,7 @@ class UserController {
   // get /api/user/clerk
   static getClerkUser = asyncHandler(async (req, res) => {
     const { id, email, fullName, image } = req.body;
-    console.log({
-      id,
-      email,
-      fullName,
-      image,
-    });
 
-    // If user is registered, sign him in
     const existingUser = await User.findOne({ email });
 
     if (existingUser) {
@@ -37,15 +30,14 @@ class UserController {
     });
 
     if (user) {
-      res.status(201).json({
+      return res.status(201).json({
         id: user._id,
         clerkId: user._id,
         token: generateToken(user._id),
       });
-    } else {
-      console.error('Failed to create the user');
-      return res.status(400).json({ error: 'Failed to create the user' });
     }
+
+    return res.status(400).json({ error: 'Failed to create the user' });
   });
 
   // Register a new user, take what is required from the body
@@ -105,9 +97,7 @@ class UserController {
 
     if (!email || !password) {
       console.error('Please enter the email and password');
-      return res
-        .status(400)
-        .json({ error: 'Please enter the email and password' });
+      return res.status(400).json({ error: 'Please enter the email and password' });
     }
 
     const user = await User.findOne({ email });
@@ -138,15 +128,14 @@ class UserController {
       : {};
     const users = await User.find(keyword)
       .find({ _id: { $ne: req.user._id } })
-      .select('_id name email pic')
-      .lean()
-      .exec();
+      .select('_id name email pic updatedAt');
 
     const filteredUsers = users.map((user) => ({
       id: user._id,
       name: user.name,
       email: user.email,
       image: user.pic,
+      date: user.updatedAt,
     }));
 
     return res.status(200).json(filteredUsers);

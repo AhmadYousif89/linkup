@@ -1,15 +1,15 @@
+import { useEffect } from "react";
 import { ProfilePanel } from "./profile";
 import { SidePanel } from "./side_panel";
 import { MainContent } from "./main_content";
 import { useUser } from "@clerk/clerk-react";
-import { useEffect } from "react";
 
+const VITE_SERVER_API = import.meta.env.VITE_SERVER_API;
 export default function Dashboard() {
   const { user } = useUser();
 
   const postUser = async () => {
     if (!user) return;
-    const VITE_SERVER_API = import.meta.env.VITE_SERVER_API;
 
     const res = await fetch(`${VITE_SERVER_API}/user/clerk`, {
       method: "POST",
@@ -25,6 +25,7 @@ export default function Dashboard() {
     });
     const { token } = await res.json();
     const storeToken = JSON.stringify(token);
+    localStorage.removeItem("token");
     localStorage.setItem("token", storeToken);
   };
 
@@ -41,10 +42,10 @@ export default function Dashboard() {
   }, []);
 
   return (
-    <main className="flex h-full bg-primary">
+    <main className="flex h-[inherit] bg-primary">
       <SidePanel />
 
-      <section className="z-50 flex flex-grow flex-col border-x border-muted-foreground text-black">
+      <section className="flex h-[inherit] basis-full flex-col border-x border-muted-foreground">
         <MainContent />
       </section>
 

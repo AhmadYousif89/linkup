@@ -1,5 +1,5 @@
 import { CheckSquare, Loader, PlusSquare, Search, X } from "lucide-react";
-import { useEffect, useState } from "react";
+import { PropsWithChildren, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { User } from "@/lib/types";
 
@@ -23,6 +23,7 @@ import {
   useProfilePanelStore,
   useUserDMsStore,
 } from "../lib/store";
+import { motion, useInView } from "framer-motion";
 
 const getAllUsers = async (searchTerm: string) => {
   const tokenItem = localStorage.getItem("token");
@@ -76,7 +77,7 @@ export function AddFriend() {
     !isLoading && hasSearched && users.length === 0 && searchTerm.length > 0;
 
   return (
-    <TabsContent value="AddFriend">
+    <TabsContent value="Connect">
       <header className="flex h-16 items-center justify-between gap-4 border-b border-muted-foreground px-4">
         <h2 className="font-medium text-muted">Connect with members</h2>
       </header>
@@ -155,13 +156,13 @@ function SearchResult({
   const handleViewProfile = (user: User) => {
     setUserProfile(user);
     setIsOpen(true);
-    setActiveTab("");
+    if (window.innerWidth < 1024) setActiveTab("");
   };
 
   const handleCreateDM = (user: User) => {
     setUserDMs(user);
     setActiveTab("Messages");
-    toast.success(`You have a DM with ${user.name} now!`);
+    toast.success(`You now have a DM with ${user.name}`);
   };
 
   const handleSendFriendRequest = async (friend: Friend) => {
@@ -197,42 +198,18 @@ function SearchResult({
               (friend) => friend.id === user.id,
             );
             return (
-              <li
+              <FriendRequest
                 key={user.id}
                 className="flex items-center justify-between rounded bg-muted-foreground/50 p-3"
               >
                 <div className="flex items-center gap-4">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger className="size-10 overflow-hidden rounded-full bg-indigo-400 p-1 text-xs">
-                      <img
-                        src={user.image}
-                        alt={user.name.slice(0, 2)}
-                        className="flex size-full items-center justify-center rounded-full object-cover text-primary"
-                      />
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent
-                      align="start"
-                      alignOffset={6}
-                      className="z-[150] space-y-2 rounded-lg rounded-tl-none pb-4"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem
-                        onClick={() => handleViewProfile(user)}
-                        className="focus:bg-muted-foreground/50"
-                      >
-                        View profile
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={() => handleCreateDM(user)}
-                        className="focus:bg-muted-foreground/50"
-                      >
-                        Create DM
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-
+                  <div className="size-10 overflow-hidden rounded-full bg-secondary/50 p-1 text-xs">
+                    <img
+                      src={user.image || "/user.png"}
+                      alt={user.name.slice(0, 2)}
+                      className="flex size-full items-center justify-center rounded-full object-cover text-primary"
+                    />
+                  </div>
                   <div className="space-y-1">
                     <p className="text-sm font-semibold text-secondary">
                       {user.name}
@@ -242,25 +219,88 @@ function SearchResult({
                     </p>
                   </div>
                 </div>
-
-                <Button
-                  className="size-8 p-1 text-xs hover:bg-muted-foreground hover:text-secondary"
-                  disabled={friendRequestSent}
-                  variant={"ghost"}
-                  size={"sm"}
-                  onClick={() => handleSendFriendRequest(user as Friend)}
-                >
-                  {friendRequestSent ? (
-                    <CheckSquare className="text-green-900" />
-                  ) : (
-                    <PlusSquare />
-                  )}
-                </Button>
-              </li>
+                <DropdownMenu>
+                  <DropdownMenuTrigger>
+                    <Button
+                      asChild
+                      className="size-8 p-1 text-xs hover:bg-muted-foreground hover:text-secondary"
+                      variant={"ghost"}
+                      size={"sm"}
+                    >
+                      <PlusSquare />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent
+                    align="end"
+                    alignOffset={6}
+                    sideOffset={-4}
+                    className="z-[150] space-y-2 rounded-lg rounded-tr-none pb-4"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      disabled={friendRequestSent}
+                      onClick={() => handleSendFriendRequest(user as Friend)}
+                      className="focus:bg-muted-foreground/50"
+                    >
+                      {friendRequestSent ? (
+                        <span className="flex items-center gap-2">
+                          Request sent{" "}
+                          <CheckSquare className="size-5 text-green-300" />
+                        </span>
+                      ) : (
+                        "Send friend request"
+                      )}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => handleViewProfile(user)}
+                      className="focus:bg-muted-foreground/50"
+                    >
+                      View profile
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => handleCreateDM(user)}
+                      className="focus:bg-muted-foreground/50"
+                    >
+                      Create DM
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </FriendRequest>
             );
           })}
         </ul>
       </ScrollArea>
     </section>
+  );
+}
+
+type FriendRequestProps = PropsWithChildren & { className?: string };
+function FriendRequest({ children, className }: FriendRequestProps) {
+  const ref = useRef<HTMLLIElement>(null);
+  const [isVisible, setIsVisible] = useState(false);
+  const isInView = useInView(ref);
+
+  useEffect(() => {
+    if (isInView && !isVisible) {
+      setIsVisible(true);
+    }
+  }, [isInView, isVisible]);
+
+  return (
+    <motion.li
+      ref={ref}
+      initial={false}
+      variants={{
+        hidden: { opacity: 0, translateY: "25px" },
+        visible: { opacity: 1, translateY: "0px" },
+      }}
+      animate={isVisible ? "visible" : "hidden"}
+      transition={{ duration: 0.5, delay: 0.1 }}
+      className={className}
+    >
+      {children}
+    </motion.li>
   );
 }

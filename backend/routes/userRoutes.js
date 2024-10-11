@@ -6,6 +6,8 @@ import verifyToken from '../middleware/authMiddleware.js';
 const router = Router();
 
 // Create a new user
+router.post('/clerk', UserController.getClerkUser);
+
 router.post('/signup', UserController.registerUser);
 
 // Check the authentication
