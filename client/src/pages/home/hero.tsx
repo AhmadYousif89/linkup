@@ -9,7 +9,7 @@ export function HeroSection() {
   const { user } = useUser();
 
   return (
-    <section className="relative mt-16 grid min-h-[80svh]">
+    <section className="relative mt-16 grid h-[80svh]">
       <p className="absolute left-1/2 mb-4 flex w-full max-w-xs -translate-x-1/2 cursor-default items-center justify-center rounded-full border bg-gradient-to-br from-transparent to-secondary py-1.5">
         <SparklesIcon
           aria-label="Sparkles icon"

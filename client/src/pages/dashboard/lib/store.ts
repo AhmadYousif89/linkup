@@ -22,7 +22,7 @@ type ActiveTabState = {
 };
 
 export const useActiveTabStore = create<ActiveTabState>((set) => ({
-  activeTab: window.innerWidth > 1280 ? "Messages" : "",
+  activeTab: window.innerWidth > 1280 ? "Connect" : "",
   setActiveTab: (activeTab) => set({ activeTab }),
 }));
 
@@ -48,7 +48,6 @@ export const useFriendRequestStore = create<UserFriendRequestState>((set) => ({
       return { friendRequests: updatedFriendRequests };
     }),
 }));
-
 type UserDMsState = {
   userDMs: User[];
   setUserDMs: (user: User) => void;
@@ -58,14 +57,19 @@ export const useUserDMsStore = create<UserDMsState>((set) => ({
   userDMs: [],
   setUserDMs: (user) =>
     set((state) => {
-      const updatedUserDMs = state.userDMs.map((userDM) =>
-        userDM.id === user.id ? userDM : { ...user },
-      );
-
-      if (!updatedUserDMs.some((uDM) => uDM.id === user.id)) {
-        updatedUserDMs.push({ ...user });
+      if (!state.userDMs.some((uDM) => uDM.id === user.id)) {
+        return { userDMs: [user, ...state.userDMs] };
       }
-      console.log(updatedUserDMs);
-      return { userDMs: updatedUserDMs };
+      return state;
     }),
+}));
+
+type MainChatState = {
+  mainChatUser: User | null;
+  setMainChatUser: (user: User) => void;
+};
+
+export const useMainChatStore = create<MainChatState>((set) => ({
+  mainChatUser: null,
+  setMainChatUser: (user) => set({ mainChatUser: user }),
 }));
