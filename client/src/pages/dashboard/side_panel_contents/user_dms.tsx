@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Loader, Search, X } from "lucide-react";
 
 import {
@@ -15,11 +15,13 @@ import { TabsContent } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   useActiveTabStore,
+  useMainChatStore,
   useProfilePanelStore,
   useUserDMsStore,
 } from "../lib/store";
-import { formatDate } from "@/lib/utils";
 import { User } from "@/lib/types";
+import { formatDate } from "@/lib/utils";
+import { motion, useInView } from "framer-motion";
 
 const getAllUserChats = async () => {
   const tokenItem = localStorage.getItem("token");
@@ -34,6 +36,7 @@ const getAllUserChats = async () => {
   const chats = await res.json();
   return chats;
 };
+
 export function UserDMs() {
   const { userDMs } = useUserDMsStore();
   const [searchTerm, setSearchTerm] = useState("");
@@ -43,6 +46,7 @@ export function UserDMs() {
     const fetchData = async () => {
       try {
         setIsLoading(true);
+        // Todo: load user chats from DB and set to store
         await getAllUserChats();
       } catch (error) {
         console.error(error);
@@ -118,6 +122,7 @@ type RenderDMsResultProps = {
 function RenderDMsResult({ userDMs, searchTerm }: RenderDMsResultProps) {
   const { setActiveTab } = useActiveTabStore();
   const { setUserProfile, setIsOpen } = useProfilePanelStore();
+  const { setMainChatUser } = useMainChatStore();
 
   const errorMessage =
     searchTerm && userDMs.length === 0 ? "No results found" : "";
@@ -128,14 +133,16 @@ function RenderDMsResult({ userDMs, searchTerm }: RenderDMsResultProps) {
         ? "Search results"
         : "";
 
-  const handleSendMessage = () => {
-    setActiveTab("");
+  const handleSendMessage = (user: User) => {
+    setMainChatUser(user);
+    // Todo: load user chat messages
+    if (window.innerWidth < 1024) setActiveTab("");
   };
 
   const handleViewProfile = (user: User) => {
     setUserProfile(user);
     setIsOpen(true);
-    setActiveTab("");
+    if (window.innerWidth < 1024) setActiveTab("");
   };
 
   return (
@@ -153,13 +160,15 @@ function RenderDMsResult({ userDMs, searchTerm }: RenderDMsResultProps) {
       {userDMs.length > 0 ? (
         <ul className="mt-4 space-y-4">
           {userDMs.map((user) => (
-            <li key={user.id}>
+            <DM key={user.id}>
               <div className="flex items-center justify-between rounded bg-muted-foreground/50 p-3 text-primary">
-                <div className="flex items-center gap-4 text-left">
+                <div className="relative flex items-center gap-4 text-left">
+                  {/* Status Indecator */}
+                  <span className="absolute bottom-0 left-1 size-2 rounded-full bg-green-400 ring-2 ring-muted" />
                   <DropdownMenu>
-                    <DropdownMenuTrigger className="relative size-10 rounded-full bg-indigo-400 text-xs before:absolute before:bottom-0 before:right-1 before:size-2 before:rounded-full before:bg-green-400 before:ring-2 before:ring-muted">
+                    <DropdownMenuTrigger className="size-10 overflow-hidden rounded-full bg-secondary/50 text-xs">
                       <img
-                        src={user.image}
+                        src={user.image || "/user.png"}
                         alt={user.name}
                         className="aspect-square size-full rounded-full object-cover p-1"
                       />
@@ -173,7 +182,7 @@ function RenderDMsResult({ userDMs, searchTerm }: RenderDMsResultProps) {
                       <DropdownMenuLabel>Actions</DropdownMenuLabel>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem
-                        onClick={() => handleSendMessage()}
+                        onClick={() => handleSendMessage(user)}
                         className="focus:bg-muted-foreground/50"
                       >
                         Send Message
@@ -199,7 +208,7 @@ function RenderDMsResult({ userDMs, searchTerm }: RenderDMsResultProps) {
                   {formatDate(user.date)}
                 </div>
               </div>
-            </li>
+            </DM>
           ))}
         </ul>
       ) : (
@@ -210,5 +219,36 @@ function RenderDMsResult({ userDMs, searchTerm }: RenderDMsResultProps) {
         )
       )}
     </div>
+  );
+}
+
+type DMProps = {
+  children: React.ReactNode;
+};
+
+function DM({ children }: DMProps) {
+  const ref = useRef<HTMLLIElement>(null);
+  const [isVisible, setIsVisible] = useState(false);
+  const isInView = useInView(ref);
+
+  useEffect(() => {
+    if (isInView && !isVisible) {
+      setIsVisible(true);
+    }
+  }, [isInView, isVisible]);
+
+  return (
+    <motion.li
+      ref={ref}
+      initial={false}
+      variants={{
+        hidden: { opacity: 0, translateY: "25px" },
+        visible: { opacity: 1, translateY: "0px" },
+      }}
+      animate={isVisible ? "visible" : "hidden"}
+      transition={{ duration: 0.5, delay: 0.1 }}
+    >
+      {children}
+    </motion.li>
   );
 }
