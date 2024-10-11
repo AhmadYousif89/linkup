@@ -1,5 +1,6 @@
-import express from 'express';
 import dotenv from 'dotenv';
+import cors from 'cors';
+import express from 'express';
 import { Server } from 'socket.io';
 import connectDB from './config/db.js';
 import userRouter from './routes/userRoutes.js';
@@ -15,6 +16,15 @@ app.use(express.json());
 
 // get port from env, or use 5000 as default
 const port = process.env.PORT || 5000;
+const allowedOrigins = ['http://127.0.0.1:5173', 'http://localhost:5173'];
+const PRODUCTION_ORIGIN = process.env.PRODUCTION_ORIGIN || false;
+const corsOptions = {
+  origin: process.env.NODE_ENV === 'production' ? PRODUCTION_ORIGIN : allowedOrigins,
+  optionsSuccessStatus: 200, // some legacy browsers (IE11, various SmartTVs) choke on 204
+  credentials: true, // credentials: true is a must for cookies
+};
+
+app.use(cors(corsOptions));
 
 // Main page to be changed
 app.get('/api', (req, res) => {
@@ -37,17 +47,12 @@ app.use(AppHandlers.urlNotFound);
 app.use(AppHandlers.errorHandler);
 
 // Confirm start to the console
-const server = app.listen(
-  port,
-  console.log(`Server listening on port ${port}`)
-);
+const server = app.listen(port, console.log(`Server listening on port ${port}`));
 
 // Setup up socket.io
 const io = new Server(server, {
   pingTimeout: 60000,
-  cors: {
-    origin: ['http://localhost:5173', 'http://127.0.0.1/:5173'],
-  },
+  cors: corsOptions,
 });
 
 io.on('connection', (socket) => {
