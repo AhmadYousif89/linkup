@@ -25,7 +25,7 @@ class MessageController {
       }
 
       const currentUser = chat.users.find(
-        (user) => user._id.toString() === req.user._id.toString(),
+        (user) => user._id.toString() === req.user._id.toString()
       );
 
       if (!currentUser) {
@@ -47,9 +47,15 @@ class MessageController {
       let message = await Message.create(newMessage);
       message = await message.populate('sender', 'name pic');
       message = await message.populate('chat');
-      message = await User.populate(message, { path: 'chat.users', select: 'name pic' });
+      message = await User.populate(message, {
+        path: 'chat.users',
+        select: 'name pic',
+      });
 
-      await Chat.findByIdAndUpdate(chatId, { latestMessage: message });
+      await Chat.findByIdAndUpdate(chatId, {
+        latestMessage: message,
+        closedUsers: [],
+      });
       return res.json(message);
     } catch (error) {
       console.log(error);
@@ -69,7 +75,11 @@ class MessageController {
       if (!chat) {
         console.log('Chat not found');
         return res.status(400).json('Chat not found');
-      } else if (!chat.users.find((user) => user._id.toString() === req.user._id.toString())) {
+      } else if (
+        !chat.users.find(
+          (user) => user._id.toString() === req.user._id.toString()
+        )
+      ) {
         console.log('User not found in chat');
         return res.status(400).json('User not found in chat');
       }
