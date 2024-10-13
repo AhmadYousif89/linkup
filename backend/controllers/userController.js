@@ -20,7 +20,6 @@ class UserController {
       });
     }
 
-    // Create a new user
     const user = await User.create({
       clerkId: id,
       name: fullName,
