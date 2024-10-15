@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { Loader, Search, X } from "lucide-react";
 
 import {
@@ -9,21 +9,22 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import FadeUp from "@/components/fade_up";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { TabsContent } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import {
-  useActiveTabStore,
-  useMainChatStore,
-  useProfilePanelStore,
-  useUserDMsStore,
-} from "../lib/store";
+
 import { User } from "@/lib/types";
 import { formatDate } from "@/lib/utils";
-import { motion, useInView } from "framer-motion";
+import { useCurrentChatStore } from "../stores/chat";
+import { useProfilePanelStore } from "../stores/profile-panel";
+import { useActiveTabStore, useUserDMsStore } from "../stores/side-panel";
+import { SocketEvent, socket } from "@/lib/store";
 
-const getAllUserChats = async () => {
+let currentChat: string | null = null;
+
+const getUserDMs = async () => {
   const tokenItem = localStorage.getItem("token");
   const token = tokenItem ? JSON.parse(tokenItem) : null;
   const VITE_SERVER_API = import.meta.env.VITE_SERVER_API;
@@ -38,7 +39,7 @@ const getAllUserChats = async () => {
 };
 
 export function UserDMs() {
-  const { userDMs } = useUserDMsStore();
+  const { userDMs, setUserDMs } = useUserDMsStore();
   const [searchTerm, setSearchTerm] = useState("");
   const [isLoading, setIsLoading] = useState(true);
 
@@ -46,8 +47,21 @@ export function UserDMs() {
     const fetchData = async () => {
       try {
         setIsLoading(true);
-        // Todo: load user chats from DB and set to store
-        await getAllUserChats();
+        const chats = await getUserDMs();
+
+        const actualUsers = [];
+        for (const chat of chats) {
+          const user: User = {
+            chatId: chat._id,
+            id: chat.users[0]._id,
+            name: chat.users[0].name,
+            email: chat.users[0].email,
+            image: chat.users[0].pic,
+            timestamp: chat.updatedAt,
+          };
+          actualUsers.push(user);
+        }
+        setUserDMs(actualUsers);
       } catch (error) {
         console.error(error);
       } finally {
@@ -122,7 +136,7 @@ type RenderDMsResultProps = {
 function RenderDMsResult({ userDMs, searchTerm }: RenderDMsResultProps) {
   const { setActiveTab } = useActiveTabStore();
   const { setUserProfile, setIsOpen } = useProfilePanelStore();
-  const { setMainChatUser } = useMainChatStore();
+  const { setCurrentChatUser, setCurrentChatData } = useCurrentChatStore();
 
   const errorMessage =
     searchTerm && userDMs.length === 0 ? "No results found" : "";
@@ -133,10 +147,24 @@ function RenderDMsResult({ userDMs, searchTerm }: RenderDMsResultProps) {
         ? "Search results"
         : "";
 
-  const handleSendMessage = (user: User) => {
-    setMainChatUser(user);
-    // Todo: load user chat messages
+  const handleStartChat = (user: User) => {
+    console.log(user);
+    console.log({ currentChat });
+
+    if (currentChat) {
+      socket.emit(SocketEvent.Chat.Leave, currentChat);
+      setCurrentChatData([]);
+    }
+    currentChat = user.chatId;
+
+    setCurrentChatUser(user);
     if (window.innerWidth < 1024) setActiveTab("");
+  };
+
+  const handleCloseDM = (chatId: string) => {
+    setCurrentChatUser(null);
+    setCurrentChatData([]);
+    socket.emit(SocketEvent.Chat.Leave, chatId);
   };
 
   const handleViewProfile = (user: User) => {
@@ -152,64 +180,74 @@ function RenderDMsResult({ userDMs, searchTerm }: RenderDMsResultProps) {
           {errorMessage}
         </div>
       )}
+
       {renderMessage && (
         <div className="flex flex-col items-center justify-center text-center text-sm font-semibold text-muted-foreground">
           {renderMessage}
         </div>
       )}
+
       {userDMs.length > 0 ? (
         <ul className="mt-4 space-y-4">
-          {userDMs.map((user) => (
-            <DM key={user.id}>
-              <div className="flex items-center justify-between rounded bg-muted-foreground/50 p-3 text-primary">
-                <div className="relative flex items-center gap-4 text-left">
-                  {/* Status Indecator */}
-                  <span className="absolute bottom-0 left-1 size-2 rounded-full bg-green-400 ring-2 ring-muted" />
-                  <DropdownMenu>
-                    <DropdownMenuTrigger className="size-10 overflow-hidden rounded-full bg-secondary/50 text-xs">
-                      <img
-                        src={user.image || "/user.png"}
-                        alt={user.name}
-                        className="aspect-square size-full rounded-full object-cover p-1"
-                      />
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent
-                      align="start"
-                      alignOffset={6}
-                      className="z-[150] space-y-2 rounded-lg rounded-tl-none pb-4"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem
-                        onClick={() => handleSendMessage(user)}
-                        className="focus:bg-muted-foreground/50"
+          {userDMs.map((user) => {
+            return (
+              <FadeUp.li
+                key={user.id}
+                className="cursor-pointer bg-muted-foreground/50 hover:bg-muted-foreground/60"
+              >
+                <div
+                  onClick={() => handleStartChat(user)}
+                  className="flex items-center justify-between rounded p-3 text-primary"
+                >
+                  <div className="relative flex items-center gap-4 text-left">
+                    {/* Status Indecator */}
+                    <span className="absolute bottom-0 left-1 size-2 rounded-full bg-green-400 ring-2 ring-muted" />
+                    <DropdownMenu>
+                      <DropdownMenuTrigger className="size-10 overflow-hidden rounded-full bg-secondary/50 p-[2px] text-xs">
+                        <img
+                          src={user.image || "/user.png"}
+                          alt={user.name}
+                          className="aspect-square size-full rounded-full object-cover"
+                        />
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent
+                        align="start"
+                        alignOffset={6}
+                        className="z-[150] space-y-2 rounded-lg rounded-tl-none pb-4"
+                        onClick={(e) => e.stopPropagation()}
                       >
-                        Send Message
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={() => handleViewProfile(user)}
-                        className="focus:bg-muted-foreground/50"
-                      >
-                        View Profile
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                  <div className="space-y-1">
-                    <p className="text-sm font-semibold text-secondary">
-                      {user.name}
-                    </p>
-                    <p className="line-clamp-1 max-w-36 overflow-hidden text-xs text-muted">
-                      {user.email}
-                    </p>
+                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          onClick={() => handleViewProfile(user)}
+                          className="focus:bg-muted-foreground/50"
+                        >
+                          View Profile
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => handleCloseDM(user.chatId)}
+                          className="focus:bg-muted-foreground/50"
+                        >
+                          Close DM
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                    <div className="space-y-1">
+                      <p className="text-sm font-semibold text-secondary">
+                        {user.name}
+                      </p>
+                      <p className="line-clamp-1 max-w-36 overflow-hidden text-xs text-muted">
+                        {user.email}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-xs font-semibold text-muted/70">
+                    {formatDate(user.timestamp)}
                   </div>
                 </div>
-                <div className="text-xs font-semibold text-muted/50">
-                  {formatDate(user.date)}
-                </div>
-              </div>
-            </DM>
-          ))}
+              </FadeUp.li>
+            );
+          })}
         </ul>
       ) : (
         !errorMessage && (
@@ -219,36 +257,5 @@ function RenderDMsResult({ userDMs, searchTerm }: RenderDMsResultProps) {
         )
       )}
     </div>
-  );
-}
-
-type DMProps = {
-  children: React.ReactNode;
-};
-
-function DM({ children }: DMProps) {
-  const ref = useRef<HTMLLIElement>(null);
-  const [isVisible, setIsVisible] = useState(false);
-  const isInView = useInView(ref);
-
-  useEffect(() => {
-    if (isInView && !isVisible) {
-      setIsVisible(true);
-    }
-  }, [isInView, isVisible]);
-
-  return (
-    <motion.li
-      ref={ref}
-      initial={false}
-      variants={{
-        hidden: { opacity: 0, translateY: "25px" },
-        visible: { opacity: 1, translateY: "0px" },
-      }}
-      animate={isVisible ? "visible" : "hidden"}
-      transition={{ duration: 0.5, delay: 0.1 }}
-    >
-      {children}
-    </motion.li>
   );
 }

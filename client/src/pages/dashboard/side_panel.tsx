@@ -9,18 +9,32 @@ import {
   UsersRound,
   ArrowBigLeft,
   CircleEllipsis,
-  PanelLeftClose,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ThemeSwitcher } from "@/components/theme_switcher";
-import { Tab, useActiveTabStore, useProfilePanelStore } from "./lib/store";
 
 import { UserDMs } from "./side_panel_contents/user_dms";
 import { UserRooms } from "./side_panel_contents/user_rooms";
-import { UserGroups } from "./side_panel_contents/user_groups";
+import { UserRequests } from "./side_panel_contents/user_requests";
 import { AddFriend } from "./side_panel_contents/add_friend";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
+import { Tab, useActiveTabStore } from "./stores/side-panel";
+import { useProfilePanelStore } from "./stores/profile-panel";
+import { useSocketStore } from "@/lib/store";
+
+function SocketConnectionState() {
+  const { isConnected } = useSocketStore();
+
+  return (
+    <div
+      className={cn(
+        "absolute left-1/2 top-[62px] z-[500] h-[2px] w-14 -translate-x-1/2 rounded-full",
+        isConnected ? "bg-green-500" : "bg-red-600",
+      )}
+    />
+  );
+}
 
 export function SidePanel() {
   const { activeTab, setActiveTab } = useActiveTabStore();
@@ -30,10 +44,12 @@ export function SidePanel() {
       {/* SideBar */}
       <aside
         className={cn(
-          "z-50 flex flex-col bg-primary px-2 pb-5 md:border-r",
+          "relative z-50 flex min-w-20 flex-col bg-primary pb-5 md:border-r",
           activeTab ? "border-muted-foreground" : "border-transparent",
         )}
       >
+        <SocketConnectionState />
+
         <div className="mb-4 flex h-16 items-center justify-center text-base font-bold text-secondary">
           <Link
             to="/home"
@@ -51,21 +67,21 @@ export function SidePanel() {
         onValueChange={(value) => setActiveTab(value as Tab)}
         orientation="vertical"
         className={cn([
-          "fixed z-30 h-full overflow-hidden md:relative md:max-w-xs xl:max-w-sm",
-          "transition-[width] ease-in-out",
-          activeTab ? "w-80 duration-700 md:w-full" : "w-0 duration-300",
+          "fixed z-30 h-full overflow-hidden md:relative md:left-0 md:max-w-xs xl:max-w-sm",
+          "transition-[width] duration-500 ease-in-out",
+          activeTab ? "w-80 md:w-full" : "w-0",
         ])}
       >
         {/* Backdrop Overlay */}
         <AnimatePresence>
           {activeTab && (
             <motion.div
-              initial={{ x: "-100%" }}
               animate={{ x: 0 }}
               exit={{ x: "-100%" }}
-              transition={{ type: "spring", duration: 0.35 }}
+              initial={{ x: "-100%" }}
+              transition={{ duration: 0.2 }}
               onClick={() => setActiveTab("")}
-              className="fixed inset-0 z-20 bg-muted-foreground/50 backdrop-blur-sm md:hidden"
+              className="fixed inset-0 z-20 overflow-hidden bg-muted-foreground/50 backdrop-blur-sm md:hidden"
             />
           )}
         </AnimatePresence>
@@ -73,30 +89,23 @@ export function SidePanel() {
         <AnimatePresence>
           {activeTab && (
             <motion.section
-              exit={{ x: "-100%" }}
               initial={{ x: "-100%" }}
-              animate={{ x: window.innerWidth > 768 ? 0 : 70 }}
-              transition={{ type: "spring", duration: 1 }}
+              animate={{ x: window.innerWidth < 768 ? 81 : 0 }}
+              exit={{ x: "-100%" }}
+              transition={{ duration: 0.4 }}
               className={cn([
                 "fixed left-0 z-30 h-full overflow-hidden bg-primary text-secondary md:relative",
-                activeTab ? "min-w-80 max-[390px]:min-w-64" : "min-w-0",
+                "min-w-[75vw] ease-in-out md:min-w-80",
               ])}
             >
-              <Button
-                size="icon"
-                onClick={() => setActiveTab("")}
-                className="absolute right-3 top-3 p-0 hover:text-muted lg:text-muted-foreground"
-              >
-                <PanelLeftClose />
-              </Button>
               {/* Connect with others */}
               <AddFriend />
               {/* User Direct Messages */}
               <UserDMs />
+              {/* Friend Requests */}
+              <UserRequests />
               {/* Rooms */}
               <UserRooms />
-              {/* Groups */}
-              <UserGroups />
               {/* More */}
               <TabsContent value="More">
                 <header className="flex h-16 items-center gap-4 border-b border-muted-foreground">
@@ -110,16 +119,18 @@ export function SidePanel() {
     </>
   );
 }
+
 type Trigger = {
   value: Tab;
   icon: React.FC<React.SVGProps<SVGSVGElement>>;
   label: string;
 };
+
 const triggers: Trigger[] = [
   { value: "Connect", icon: User, label: "Connect" },
+  { value: "Requests", icon: UsersRound, label: "Requests" },
   { value: "Messages", icon: Mail, label: "DMs" },
   { value: "Rooms", icon: Component, label: "Rooms" },
-  { value: "Groups", icon: UsersRound, label: "Groups" },
   { value: "More", icon: CircleEllipsis, label: "More" },
 ];
 
@@ -141,8 +152,11 @@ function Triggers() {
                 }
               }}
               data-state={activeTab === value ? "active" : "inactive"}
-              className="group size-8 bg-primary p-1.5 text-muted-foreground duration-300 ease-in-out hover:text-muted data-[state=active]:bg-indigo-600"
+              className="group relative size-8 bg-primary p-1.5 text-muted-foreground duration-300 ease-in-out hover:text-muted data-[state=active]:bg-indigo-600"
             >
+              {/* {label === "Requests" && (
+                <span className="absolute right-0 top-0 -mr-1 -mt-1 size-3 rounded-full bg-green-300 before:absolute before:inset-0 before:size-3 before:animate-ping before:rounded-full before:bg-green-100" />
+              )} */}
               <Icon className="group-data-[state=active]:text-primary" />
             </Button>
             <small
