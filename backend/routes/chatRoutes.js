@@ -32,4 +32,7 @@ router.delete('/groupdelete', verifyToken, ChatController.deleteGroup);
 // Quit group
 router.put('/groupquit', verifyToken, ChatController.quitGroup);
 
+// Close chat
+router.put('/close', verifyToken, ChatController.closeChat);
+
 export default router;
