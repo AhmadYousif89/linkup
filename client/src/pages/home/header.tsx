@@ -25,9 +25,7 @@ export function MainHeader() {
                   variant={"outline"}
                   className="font text-xs"
                 >
-                  <SignUpButton fallbackRedirectUrl={"/dashboard"}>
-                    Sign up
-                  </SignUpButton>
+                  <SignUpButton mode="modal">Sign up</SignUpButton>
                 </Button>
               </li>
               <li>
@@ -37,9 +35,7 @@ export function MainHeader() {
                   variant={"outline"}
                   className="font text-xs"
                 >
-                  <SignInButton fallbackRedirectUrl={"/dashboard"}>
-                    Sign in
-                  </SignInButton>
+                  <SignInButton mode="modal">Sign in</SignInButton>
                 </Button>
               </li>
             </ul>
