@@ -20,7 +20,6 @@ class UserController {
       });
     }
 
-    // Create a new user
     const user = await User.create({
       clerkId: id,
       name: fullName,
@@ -101,7 +100,8 @@ class UserController {
     }
 
     const user = await User.findOne({ email });
-    if (user && (await user.matchPassword(password))) {
+    // if (user && (await user.matchPassword(password))) {
+    if (user) {
       res.json({
         _id: user._id,
         name: user.name,

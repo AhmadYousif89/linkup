@@ -11,11 +11,10 @@ import AppHandlers from './middleware/errorMiddleware.js';
 // Setup the environment, server, and database
 dotenv.config();
 const app = express();
-connectDB();
 app.use(express.json());
 
 // get port from env, or use 5000 as default
-const port = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5000;
 const allowedOrigins = ['http://127.0.0.1:5173', 'http://localhost:5173'];
 const PRODUCTION_ORIGIN = process.env.PRODUCTION_ORIGIN || false;
 const corsOptions = {
@@ -24,6 +23,7 @@ const corsOptions = {
   credentials: true, // credentials: true is a must for cookies
 };
 
+// Enable CORS
 app.use(cors(corsOptions));
 
 // Main page to be changed
@@ -46,8 +46,8 @@ app.use('/api/message/', messageRouter);
 app.use(AppHandlers.urlNotFound);
 app.use(AppHandlers.errorHandler);
 
-// Confirm start to the console
-const server = app.listen(port, console.log(`Server listening on port ${port}`));
+connectDB();
+const server = app.listen(PORT, console.log(`Server listening on port ${PORT}`));
 
 // Setup up socket.io
 const io = new Server(server, {
@@ -57,8 +57,8 @@ const io = new Server(server, {
 
 io.on('connection', (socket) => {
   console.log('Connected to socket.io');
-  socket.on('setup', (userData) => {
-    socket.join(userData._id);
+  socket.on('setup', (userId) => {
+    socket.join(userId);
     socket.emit('connected');
   });
 
@@ -76,14 +76,16 @@ io.on('connection', (socket) => {
     socket.in(chat).emit('stop typing');
   });
 
-  socket.on('new message', (newMessageRecieved) => {
-    let chat = newMessageRecieved.chat;
+  socket.on('message', (newMessageRecieved) => {
+    console.log('Message recieved', newMessageRecieved);
+    let chat = newMessageRecieved.chatId;
 
     if (!chat.users) return console.log('chat.users not defined');
 
     chat.users.forEach((user) => {
-      if (user._id == newMessageRecieved.sender._id) return;
-      socket.in(user._id).emit('message recieved', newMessageRecieved);
+      // if (user._id == newMessageRecieved.sender._id) return;
+      console.log('User', user._id);
+      socket.in(user._id).emit('message', newMessageRecieved);
     });
   });
 
