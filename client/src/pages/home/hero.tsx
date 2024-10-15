@@ -3,7 +3,7 @@ import { SparklesIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { GithubIcon } from "@/components/icons/github_icon";
-import { useUser } from "@clerk/clerk-react";
+import { SignUpButton, useUser } from "@clerk/clerk-react";
 
 export function HeroSection() {
   const { user } = useUser();
@@ -40,6 +40,7 @@ export function HeroSection() {
         {/* CTA */}
         <div className="mt-12 flex items-center justify-center gap-6">
           <Button
+            asChild
             size={"lg"}
             variant={"ghost"}
             className="h-10 w-28 rounded-lg border border-primary bg-gradient-to-br from-primary/10 via-muted/10 to-indigo-500 p-0 font-semibold shadow hover:bg-muted/20"
@@ -52,7 +53,9 @@ export function HeroSection() {
                 Dashboard
               </Link>
             ) : (
-              <Link to="/sign-up">Join now</Link>
+              <span>
+                <SignUpButton mode="modal">Join now</SignUpButton>
+              </span>
             )}
           </Button>
           <Button

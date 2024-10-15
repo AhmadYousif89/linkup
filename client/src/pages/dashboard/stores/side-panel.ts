@@ -1,21 +1,7 @@
 import { User } from "@/lib/types";
 import { create } from "zustand";
 
-type ProfilePanelState = {
-  userProfile: User | null;
-  setUserProfile: (userProfile: User) => void;
-  isOpen: boolean;
-  setIsOpen: (isOpen: boolean) => void;
-};
-
-export const useProfilePanelStore = create<ProfilePanelState>((set) => ({
-  userProfile: null,
-  setUserProfile: (userProfile) => set({ userProfile }),
-  isOpen: window.innerWidth > 1024 ? true : false,
-  setIsOpen: (isOpen) => set({ isOpen }),
-}));
-
-export type Tab = "Connect" | "Messages" | "Rooms" | "Groups" | "More" | "";
+export type Tab = "Connect" | "Messages" | "Rooms" | "Requests" | "More" | "";
 type ActiveTabState = {
   activeTab: Tab;
   setActiveTab: (activeTab: Tab) => void;
@@ -48,28 +34,23 @@ export const useFriendRequestStore = create<UserFriendRequestState>((set) => ({
       return { friendRequests: updatedFriendRequests };
     }),
 }));
+
 type UserDMsState = {
   userDMs: User[];
-  setUserDMs: (user: User) => void;
+  setUserDMs: (users: User[]) => void;
 };
 
 export const useUserDMsStore = create<UserDMsState>((set) => ({
   userDMs: [],
-  setUserDMs: (user) =>
+  setUserDMs: (users) =>
     set((state) => {
-      if (!state.userDMs.some((uDM) => uDM.id === user.id)) {
-        return { userDMs: [user, ...state.userDMs] };
-      }
-      return state;
+      const updatedUserDMs = state.userDMs.map(
+        (user) => users.find((u) => u.id === user.id) || user,
+      );
+
+      const newUsers = users.filter(
+        (user) => !state.userDMs.some((u) => u.id === user.id),
+      );
+      return { userDMs: [...updatedUserDMs, ...newUsers] };
     }),
-}));
-
-type MainChatState = {
-  mainChatUser: User | null;
-  setMainChatUser: (user: User) => void;
-};
-
-export const useMainChatStore = create<MainChatState>((set) => ({
-  mainChatUser: null,
-  setMainChatUser: (user) => set({ mainChatUser: user }),
 }));

@@ -55,42 +55,69 @@ const io = new Server(server, {
   cors: corsOptions,
 });
 
-io.on('connection', (socket) => {
-  console.log('Connected to socket.io');
-  socket.on('setup', (userId) => {
+const SocketEvent = {
+  Connect: {
+    Init: 'connection',
+    Connected: 'connected',
+    Setup: 'intial join',
+  },
+  Disconnect: 'disconnect',
+  Messages: {
+    New: 'new',
+    Greet: 'greet',
+    Recieved: 'recieved',
+  },
+  User: {
+    IsTyping: 'user typing',
+    IsNotTyping: 'user not typing',
+    Join: 'user join',
+    Leave: 'user leave',
+  },
+  Chat: {
+    Join: 'join chat',
+    Leave: 'leave chat',
+  },
+};
+
+io.on(SocketEvent.Connect.Init, (socket) => {
+  socket.on(SocketEvent.Connect.Setup, (userId) => {
     socket.join(userId);
-    socket.emit('connected');
+    console.log('User connected', userId);
+    socket.emit(SocketEvent.Connect.Connected, userId);
   });
 
-  // I don't know how is this useful, maybe for group
-  socket.on('join chat', (chat) => {
-    socket.join(chat);
+  socket.on(SocketEvent.Chat.Join, (chat) => {
     console.log('User joined chat: ' + chat);
+    socket.join(chat);
   });
 
-  socket.on('typing', (chat) => {
-    socket.in(chat).emit('typing');
+  socket.on(SocketEvent.Chat.Leave, (chat) => {
+    console.log('User leaved chat: ' + chat);
+    socket.leave(chat);
   });
 
-  socket.on('stop typing', (chat) => {
-    socket.in(chat).emit('stop typing');
+  socket.on(SocketEvent.User.IsTyping, (chat) => {
+    socket.in(chat).emit(SocketEvent.User.IsTyping);
   });
 
-  socket.on('message', (newMessageRecieved) => {
-    console.log('Message recieved', newMessageRecieved);
-    let chat = newMessageRecieved.chatId;
+  socket.on(SocketEvent.User.IsNotTyping, (chat) => {
+    socket.in(chat).emit(SocketEvent.User.IsNotTyping);
+  });
 
-    if (!chat.users) return console.log('chat.users not defined');
-
-    chat.users.forEach((user) => {
-      // if (user._id == newMessageRecieved.sender._id) return;
-      console.log('User', user._id);
-      socket.in(user._id).emit('message', newMessageRecieved);
+  socket.on(SocketEvent.Messages.New, (message) => {
+    if (!message.chat.users) return console.log('chat.users not defined');
+    message.chat.users.forEach((user) => {
+      if (user.id === message.sender.id) {
+        console.log('Message sent to self');
+        return;
+      }
+      socket.in(user.id).emit(SocketEvent.Messages.Recieved, message);
+      console.log('Message sent to: ' + user.id);
     });
   });
 
-  socket.off('setup', (userData) => {
+  socket.off(SocketEvent.Connect.Setup, (userData) => {
     console.log('USER DISCONNECTED');
-    socket.leave(userData._id);
+    socket.leave(userData.id);
   });
 });

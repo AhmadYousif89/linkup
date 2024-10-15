@@ -52,11 +52,31 @@ class MessageController {
         select: 'name pic',
       });
 
-      await Chat.findByIdAndUpdate(chatId, {
-        latestMessage: message,
-        closedUsers: [],
-      });
-      return res.json(message);
+
+      await Chat.findByIdAndUpdate(chatId, { latestMessage: message });
+      const data = {
+        id: message._id,
+        text: message.content,
+        sender: {
+          id: message.sender._id,
+          name: message.sender.name,
+          image: message.sender.pic,
+        },
+        chat: {
+          id: message.chat._id,
+          name: message.chat.chatName,
+          isGroup: message.chat.isGroupChat,
+          users: message.chat.users.map((user) => ({
+            id: user._id,
+            name: user.name,
+            image: user.pic,
+          })),
+          latestMessage: message.chat.latestMessage,
+        },
+        readBy: message.readBy,
+        timestamp: message.createdAt,
+      };
+      return res.json(data);
     } catch (error) {
       console.log(error);
       return res.status(400).json({ error: 'Failed to send message' });
@@ -93,7 +113,29 @@ class MessageController {
       const messages = await Message.find({ chat: chatId })
         .populate('sender', 'name pic email')
         .populate('chat');
-      return res.status(200).json(messages);
+      const data = messages.map((message) => ({
+        id: message._id,
+        text: message.content,
+        sender: {
+          id: message.sender._id,
+          name: message.sender.name,
+          image: message.sender.pic,
+        },
+        chat: {
+          id: message.chat._id,
+          name: message.chat.chatName,
+          isGroup: message.chat.isGroupChat,
+          users: message.chat.users.map((user) => ({
+            id: user._id,
+            name: user.name,
+            image: user.pic,
+          })),
+          latestMessage: message.chat.latestMessage,
+        },
+        readBy: message.readBy,
+        timestamp: message.createdAt,
+      }));
+      return res.status(200).json(data);
     } catch (error) {
       console.log(error);
       return res.status(400).json({ error: 'Failed to fetch messages' });
