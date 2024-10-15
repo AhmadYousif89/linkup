@@ -1,5 +1,5 @@
 import { CheckSquare, Loader, PlusSquare, Search, X } from "lucide-react";
-import { PropsWithChildren, useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { User } from "@/lib/types";
 
@@ -16,14 +16,15 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+
+import FadeUp from "@/components/fade_up";
 import {
   Friend,
   useActiveTabStore,
   useFriendRequestStore,
-  useProfilePanelStore,
-  useUserDMsStore,
-} from "../lib/store";
-import { motion, useInView } from "framer-motion";
+} from "../stores/side-panel";
+import { useCurrentChatStore } from "../stores/chat";
+import { useProfilePanelStore } from "../stores/profile-panel";
 
 const getAllUsers = async (searchTerm: string) => {
   const tokenItem = localStorage.getItem("token");
@@ -37,6 +38,24 @@ const getAllUsers = async (searchTerm: string) => {
   });
   const users = await res.json();
   return users;
+};
+
+const createUserDM = async (userId: string) => {
+  const tokenItem = localStorage.getItem("token");
+  const token = tokenItem ? JSON.parse(tokenItem) : null;
+  const VITE_SERVER_API = import.meta.env.VITE_SERVER_API;
+  const res = await fetch(`${VITE_SERVER_API}/chat`, {
+    method: "POST",
+    body: JSON.stringify({ userId }),
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  const chat = await res.json();
+  // const { _id: chatId, users } = chat;
+  // return { _id: chatId, users };
+  return chat;
 };
 
 export function AddFriend() {
@@ -125,14 +144,14 @@ function SearchResult({
   results: User[];
 }) {
   const { setActiveTab } = useActiveTabStore();
+  const { setCurrentChatData, setCurrentChatUser } = useCurrentChatStore();
   const { setUserProfile, setIsOpen } = useProfilePanelStore();
   const { friendRequests, setFriendRequests } = useFriendRequestStore();
-  const { setUserDMs } = useUserDMsStore();
 
   if (intialMessage) {
     return (
-      <p className="mt-8 text-center font-bold text-muted-foreground">
-        Start adding some friends
+      <p className="mt-8 text-center text-sm font-bold text-muted-foreground">
+        Start connecting with your friends
       </p>
     );
   }
@@ -159,9 +178,27 @@ function SearchResult({
     if (window.innerWidth < 1024) setActiveTab("");
   };
 
-  const handleCreateDM = (user: User) => {
-    setUserDMs(user);
-    setActiveTab("Messages");
+  const handleCreateDM = async (user: User) => {
+    try {
+      const createdChat = await createUserDM(user.id);
+      // Add the chat to the user's DMs
+      // const newUserDM: User = {
+      //   chatId: createdChat.chatId,
+      //   id: createdChat.users[0]._id,
+      //   name: createdChat.users[0].name,
+      //   email: createdChat.users[0].email,
+      //   image: createdChat.users[0].pic,
+      //   date: createdChat.users[0].updatedAt,
+      // };
+      setCurrentChatUser(user);
+      setCurrentChatData(createdChat);
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to create user DM");
+    }
+
+    if (window.innerWidth < 1024) setActiveTab("");
+    else setActiveTab("Messages");
     toast.success(`You now have a DM with ${user.name}`);
   };
 
@@ -198,12 +235,12 @@ function SearchResult({
               (friend) => friend.id === user.id,
             );
             return (
-              <FriendRequest
+              <FadeUp.li
                 key={user.id}
                 className="flex items-center justify-between rounded bg-muted-foreground/50 p-3"
               >
                 <div className="flex items-center gap-4">
-                  <div className="size-10 overflow-hidden rounded-full bg-secondary/50 p-1 text-xs">
+                  <div className="size-10 overflow-hidden rounded-full bg-secondary/50 p-[2px] text-xs">
                     <img
                       src={user.image || "/user.png"}
                       alt={user.name.slice(0, 2)}
@@ -267,40 +304,11 @@ function SearchResult({
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
-              </FriendRequest>
+              </FadeUp.li>
             );
           })}
         </ul>
       </ScrollArea>
     </section>
-  );
-}
-
-type FriendRequestProps = PropsWithChildren & { className?: string };
-function FriendRequest({ children, className }: FriendRequestProps) {
-  const ref = useRef<HTMLLIElement>(null);
-  const [isVisible, setIsVisible] = useState(false);
-  const isInView = useInView(ref);
-
-  useEffect(() => {
-    if (isInView && !isVisible) {
-      setIsVisible(true);
-    }
-  }, [isInView, isVisible]);
-
-  return (
-    <motion.li
-      ref={ref}
-      initial={false}
-      variants={{
-        hidden: { opacity: 0, translateY: "25px" },
-        visible: { opacity: 1, translateY: "0px" },
-      }}
-      animate={isVisible ? "visible" : "hidden"}
-      transition={{ duration: 0.5, delay: 0.1 }}
-      className={className}
-    >
-      {children}
-    </motion.li>
   );
 }
