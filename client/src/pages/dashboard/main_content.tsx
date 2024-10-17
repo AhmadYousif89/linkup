@@ -1,38 +1,45 @@
+import { useEffect } from "react";
 import { Info, Phone, Video } from "lucide-react";
 
 import { useCurrentChatStore } from "./stores/chat";
-import { useActiveTabStore } from "./stores/side-panel";
-import { useProfilePanelStore } from "./stores/profile-panel";
+import { useActiveTabStore } from "./stores/side-panels";
+import { useProfilePanelStore } from "./stores/side-panels";
 
 import { Button } from "@/components/ui/button";
 import { Messages } from "./main_content/messages";
 import { InputMessage } from "./main_content/input_message";
-import { useEffect } from "react";
-import { SocketEvent, socket } from "@/lib/store";
+import { SocketEvent, socket, useSocketStore } from "@/lib/store";
 
 export function MainContent() {
   const { setActiveTab } = useActiveTabStore();
   const { currentChatUser } = useCurrentChatStore();
   const { isOpen, setIsOpen, setUserProfile } = useProfilePanelStore();
+  const { isTyping } = useSocketStore();
 
   const userName = currentChatUser?.name || "John Doe";
   const intials = userName
     .split(" ")
-    .map((n) => n[0])
+    .map((n: string) => n[0])
     .join("");
 
   useEffect(() => {
     const userId = localStorage.getItem("userId");
     socket.emit(SocketEvent.Connect.Setup, userId);
-    socket.on("connected", (data) => {
+
+    function connect(data: string) {
       console.log("Socket Connected: ", data);
-    });
+    }
+    socket.on("connected", connect);
+
+    return () => {
+      socket.off("connected", connect);
+    };
   }, []);
 
   return (
     <>
       {/* Chat Header */}
-      <header className="flex min-h-16 items-center justify-between border-b border-muted-foreground bg-primary px-4 lg:px-6">
+      <header className="flex min-h-16 items-center justify-between border-b-2 border-muted-foreground bg-primary px-4 lg:px-6">
         <div className="flex items-center gap-3">
           <button
             onClick={() => {
@@ -49,9 +56,15 @@ export function MainContent() {
           {/* Active User */}
           <div className="*:block">
             <span className="text-sm font-semibold text-muted">{userName}</span>
-            <small className="text-xs font-medium text-muted-foreground">
-              Reply to message
-            </small>
+            {!isTyping ? (
+              <small className="text-xs font-medium text-muted-foreground">
+                Reply to message
+              </small>
+            ) : (
+              <small className="text-xs font-semibold text-muted-foreground">
+                Typing . . .
+              </small>
+            )}
           </div>
         </div>
         {/* Chat Tools */}
