@@ -20,7 +20,7 @@ createRoot(document.getElementById("root")!).render(
       afterSignOutUrl="/ "
     >
       <App />
-      <Toaster position="bottom-left" />
+      <Toaster position="bottom-center" richColors={true} />
     </ClerkProvider>
   </StrictMode>,
 );

@@ -86,7 +86,9 @@
           rgba(50, 81, 115, 0.5)
         );
     }
+  }
 
+  .apply-mask {
     -webkit-mask-image: radial-gradient(
       ellipse 150% 30% at center center,
       #000 20%,

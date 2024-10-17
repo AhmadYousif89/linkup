@@ -74,7 +74,7 @@ export function HeroSection() {
         </div>
       </div>
       {/* Hero background image */}
-      <div className="hero-bg absolute inset-x-0 bottom-[-60%] top-[-40%] z-[-1] animate-fadeIn [--to-bg-opacity:.6] lg:[--to-bg-opacity:.8]"></div>
+      <div className="hero-bg apply-mask absolute inset-x-0 bottom-[-60%] top-[-40%] z-[-1] animate-fadeIn [--to-bg-opacity:.6] lg:[--to-bg-opacity:.8]"></div>
     </section>
   );
 }
