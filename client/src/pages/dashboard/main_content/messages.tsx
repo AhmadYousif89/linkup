@@ -1,7 +1,6 @@
-import { useEffect, useRef, useState } from "react";
-import { useUser } from "@clerk/clerk-react";
 import { Loader } from "lucide-react";
 import { motion } from "framer-motion";
+import { useEffect, useRef, useState } from "react";
 
 import { cn } from "@/lib/utils";
 import { Message, User } from "@/lib/types";
@@ -11,6 +10,8 @@ import { SocketEvent, socket, useSocketStore } from "@/lib/store";
 import FadeUp from "@/components/fade_up";
 import { useCurrentChatStore } from "../stores/chat";
 import { useProfilePanelStore } from "../stores/side-panels";
+import { useUser } from "@clerk/clerk-react";
+import { useScrollToBottom } from "@/hooks/use_scrollToBottom";
 
 export function Messages() {
   const chatContainerRef = useRef<HTMLDivElement>(null);
@@ -52,6 +53,16 @@ export function Messages() {
     };
   }, []);
 
+  const { scrollWithDelay } = useScrollToBottom(chatContainerRef, {
+    duration: 5,
+    type: "spring",
+    ease: "easeInOut",
+  });
+
+  useEffect(() => {
+    if (messages.length) scrollWithDelay(300);
+  }, [messages.length]);
+
   if (isLoading) {
     return (
       <div className="flex h-full items-center justify-center">
@@ -62,10 +73,10 @@ export function Messages() {
 
   if (messages.length === 0) {
     return (
-      <div className="flex h-full items-center justify-center">
+      <div className="flex h-full items-center justify-center text-center">
         <p className="text-sm text-muted-foreground">
           This is the beginning of your chat with{" "}
-          <span className="font-semibold">{currentChatUser?.name}</span>
+          <p className="text-lg font-semibold">{currentChatUser?.name}</p>
         </p>
       </div>
     );

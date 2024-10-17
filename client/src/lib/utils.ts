@@ -60,8 +60,8 @@ function formatUser(user: any): User {
     name: user.name,
     email: user.email,
     image: user.pic,
-    createdAt: user.createdAt,
-    updatedAt: user.updatedAt,
+    createdAt: formatDate(user.createdAt),
+    updatedAt: formatDate(user.createdAt),
   };
 }
 
