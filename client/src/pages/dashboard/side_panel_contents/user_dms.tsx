@@ -16,13 +16,11 @@ import { TabsContent } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 import { User } from "@/lib/types";
-import { formatDate } from "@/lib/utils";
-import { useCurrentChatStore } from "../stores/chat";
-import { useProfilePanelStore } from "../stores/profile-panel";
-import { useActiveTabStore, useUserDMsStore } from "../stores/side-panel";
+import { formatApiData } from "@/lib/utils";
+import { useCurrentChatStore, useUserDMsStore } from "../stores/chat";
+import { useActiveTabStore, useProfilePanelStore } from "../stores/side-panels";
 import { SocketEvent, socket } from "@/lib/store";
-
-let currentChat: string | null = null;
+import { createUserDM } from "@/lib/actions";
 
 const getUserDMs = async () => {
   const tokenItem = localStorage.getItem("token");
@@ -34,7 +32,8 @@ const getUserDMs = async () => {
       Authorization: `Bearer ${token}`,
     },
   });
-  const chats = await res.json();
+  const data = await res.json();
+  const chats = formatApiData(data, "CHAT", "Array");
   return chats;
 };
 
@@ -48,19 +47,7 @@ export function UserDMs() {
       try {
         setIsLoading(true);
         const chats = await getUserDMs();
-
-        const actualUsers = [];
-        for (const chat of chats) {
-          const user: User = {
-            chatId: chat._id,
-            id: chat.users[0]._id,
-            name: chat.users[0].name,
-            email: chat.users[0].email,
-            image: chat.users[0].pic,
-            timestamp: chat.updatedAt,
-          };
-          actualUsers.push(user);
-        }
+        const actualUsers = chats.map((chat) => chat.users).flat();
         setUserDMs(actualUsers);
       } catch (error) {
         console.error(error);
@@ -136,7 +123,7 @@ type RenderDMsResultProps = {
 function RenderDMsResult({ userDMs, searchTerm }: RenderDMsResultProps) {
   const { setActiveTab } = useActiveTabStore();
   const { setUserProfile, setIsOpen } = useProfilePanelStore();
-  const { setCurrentChatUser, setCurrentChatData } = useCurrentChatStore();
+  const { currentChat, setCurrentChat } = useCurrentChatStore();
 
   const errorMessage =
     searchTerm && userDMs.length === 0 ? "No results found" : "";
@@ -147,24 +134,20 @@ function RenderDMsResult({ userDMs, searchTerm }: RenderDMsResultProps) {
         ? "Search results"
         : "";
 
-  const handleStartChat = (user: User) => {
-    console.log(user);
-    console.log({ currentChat });
-
-    if (currentChat) {
-      socket.emit(SocketEvent.Chat.Leave, currentChat);
-      setCurrentChatData([]);
+  const handleStartChat = async (user: User) => {
+    try {
+      const userFetchedChat = await createUserDM(user.id);
+      setCurrentChat(userFetchedChat);
+    } catch (error) {
+      console.error(error);
     }
-    currentChat = user.chatId;
-
-    setCurrentChatUser(user);
     if (window.innerWidth < 1024) setActiveTab("");
   };
 
-  const handleCloseDM = (chatId: string) => {
-    setCurrentChatUser(null);
-    setCurrentChatData([]);
+  const handleCloseDM = () => {
+    const chatId = currentChat?.id || "";
     socket.emit(SocketEvent.Chat.Leave, chatId);
+    setCurrentChat(null);
   };
 
   const handleViewProfile = (user: User) => {
@@ -225,7 +208,7 @@ function RenderDMsResult({ userDMs, searchTerm }: RenderDMsResultProps) {
                           View Profile
                         </DropdownMenuItem>
                         <DropdownMenuItem
-                          onClick={() => handleCloseDM(user.chatId)}
+                          onClick={handleCloseDM}
                           className="focus:bg-muted-foreground/50"
                         >
                           Close DM
@@ -242,7 +225,7 @@ function RenderDMsResult({ userDMs, searchTerm }: RenderDMsResultProps) {
                     </div>
                   </div>
                   <div className="text-xs font-semibold text-muted/70">
-                    {formatDate(user.timestamp)}
+                    {user.updatedAt}
                   </div>
                 </div>
               </FadeUp.li>

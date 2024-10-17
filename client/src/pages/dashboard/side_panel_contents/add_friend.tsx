@@ -1,8 +1,8 @@
-import { CheckSquare, Loader, PlusSquare, Search, X } from "lucide-react";
-import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { User } from "@/lib/types";
+import { useEffect, useState } from "react";
+import { CheckSquare, Loader, PlusSquare, Search, X } from "lucide-react";
 
+import { User } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,47 +16,15 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-
 import FadeUp from "@/components/fade_up";
 import {
   Friend,
   useActiveTabStore,
   useFriendRequestStore,
-} from "../stores/side-panel";
+} from "../stores/side-panels";
 import { useCurrentChatStore } from "../stores/chat";
-import { useProfilePanelStore } from "../stores/profile-panel";
-
-const getAllUsers = async (searchTerm: string) => {
-  const tokenItem = localStorage.getItem("token");
-  const token = tokenItem ? JSON.parse(tokenItem) : null;
-  const VITE_SERVER_API = import.meta.env.VITE_SERVER_API;
-  const res = await fetch(`${VITE_SERVER_API}/user?search=${searchTerm}`, {
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-  });
-  const users = await res.json();
-  return users;
-};
-
-const createUserDM = async (userId: string) => {
-  const tokenItem = localStorage.getItem("token");
-  const token = tokenItem ? JSON.parse(tokenItem) : null;
-  const VITE_SERVER_API = import.meta.env.VITE_SERVER_API;
-  const res = await fetch(`${VITE_SERVER_API}/chat`, {
-    method: "POST",
-    body: JSON.stringify({ userId }),
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-  });
-  const chat = await res.json();
-  // const { _id: chatId, users } = chat;
-  // return { _id: chatId, users };
-  return chat;
-};
+import { useProfilePanelStore } from "../stores/side-panels";
+import { createUserDM, getAllUsers } from "@/lib/actions";
 
 export function AddFriend() {
   const [users, setUsers] = useState<User[]>([]);
@@ -72,6 +40,7 @@ export function AddFriend() {
         setHasSearched(false);
         if (searchTerm) {
           const users = await getAllUsers(searchTerm.trim());
+          console.log("users", users[2].clerkId);
           setUsers(users);
           setHasSearched(true);
         } else {
@@ -144,7 +113,7 @@ function SearchResult({
   results: User[];
 }) {
   const { setActiveTab } = useActiveTabStore();
-  const { setCurrentChatData, setCurrentChatUser } = useCurrentChatStore();
+  const { setCurrentChat } = useCurrentChatStore();
   const { setUserProfile, setIsOpen } = useProfilePanelStore();
   const { friendRequests, setFriendRequests } = useFriendRequestStore();
 
@@ -181,17 +150,7 @@ function SearchResult({
   const handleCreateDM = async (user: User) => {
     try {
       const createdChat = await createUserDM(user.id);
-      // Add the chat to the user's DMs
-      // const newUserDM: User = {
-      //   chatId: createdChat.chatId,
-      //   id: createdChat.users[0]._id,
-      //   name: createdChat.users[0].name,
-      //   email: createdChat.users[0].email,
-      //   image: createdChat.users[0].pic,
-      //   date: createdChat.users[0].updatedAt,
-      // };
-      setCurrentChatUser(user);
-      setCurrentChatData(createdChat);
+      setCurrentChat(createdChat);
     } catch (error) {
       console.error(error);
       toast.error("Failed to create user DM");
@@ -235,7 +194,7 @@ function SearchResult({
               (friend) => friend.id === user.id,
             );
             return (
-              <FadeUp.li
+              <FadeUp
                 key={user.id}
                 className="flex items-center justify-between rounded bg-muted-foreground/50 p-3"
               >
@@ -304,7 +263,7 @@ function SearchResult({
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
-              </FadeUp.li>
+              </FadeUp>
             );
           })}
         </ul>
