@@ -1,26 +1,67 @@
 export type User = {
   id: string;
-  chatId: string;
+  name: string;
+  clerkId: string;
+  email: string;
+  image: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type Sender = {
+  id: string;
   name: string;
   email: string;
   image: string;
-  timestamp: string;
 };
 
-type UserDM = Partial<User>;
-type Chat = {
+export type LatestMessage = {
   id: string;
-  name: string;
-  isGroup: boolean;
-  users: UserDM[];
-  latestMessage: string;
+  content: string;
+  sender: Sender;
+  chatId: string;
+  readBy: any[];
+  createdAt: string;
+  updatedAt: string;
+} | null;
+
+export type Chat = {
+  id: string;
+  chatName: string;
+  isGroupChat: boolean;
+  users: User[];
+  createdAt: string;
+  updatedAt: string;
+  latestMessage: LatestMessage;
 };
 
 export type Message = {
   id: string;
-  chat: Chat;
-  text: string;
-  sender: UserDM;
-  readBy: UserDM[];
-  timestamp: string;
+  content: string;
+  sender: Sender;
+  chat: {
+    id: string;
+    chatName: string;
+    isGroupChat: boolean;
+    users: string[];
+    createdAt: string;
+    updatedAt: string;
+    latestMessage: string;
+  };
+  readBy: any[];
+  createdAt: string;
+  updatedAt: string;
+};
+
+type GroupAdmin = User | null;
+
+export type GroupChat = {
+  id: string;
+  chatName: string;
+  isGroupChat: boolean;
+  users: User[];
+  groupAdmin: GroupAdmin;
+  closedUsers: any[];
+  createdAt: string;
+  updatedAt: string;
 };

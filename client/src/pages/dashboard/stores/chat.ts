@@ -1,27 +1,58 @@
-import { User } from "@/lib/types";
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
+// import { persist } from "zustand/middleware";
 
-type Message = { id: string; message: string; username: string };
+import { Chat, GroupChat, User } from "@/lib/types";
 
 type CurrentChatState = {
+  currentChat: Chat | null;
   currentChatUser: User | null;
-  setCurrentChatUser: (user: User | null) => void;
-  currentChatData: Message[];
-  setCurrentChatData: (data: Message[]) => void;
+  setCurrentChat: (data: Chat | null) => void;
 };
 
-export const useCurrentChatStore = create<CurrentChatState>()(
-  persist(
-    (set) => ({
-      currentChatUser: null,
-      setCurrentChatUser: (user) => set({ currentChatUser: user }),
-
-      currentChatData: [],
-      setCurrentChatData: (data) => set({ currentChatData: data }),
+export const useCurrentChatStore = create<CurrentChatState>()((set) => ({
+  currentChat: null,
+  currentChatUser: null,
+  setCurrentChat: (data) =>
+    set(() => {
+      if (data) {
+        return {
+          currentChat: data,
+          currentChatUser: data.users[0],
+        };
+      }
+      return {
+        currentChat: data,
+        currentChatUser: null,
+      };
     }),
-    {
-      name: "current-chat",
-    },
-  ),
-);
+}));
+
+type UserDMsState = {
+  userDMs: User[];
+  setUserDMs: (users: User[]) => void;
+};
+
+export const useUserDMsStore = create<UserDMsState>((set) => ({
+  userDMs: [],
+  setUserDMs: (users) =>
+    set((state) => {
+      const updatedUserDMs = state.userDMs.map(
+        (user) => users.find((u) => u.id === user.id) || user,
+      );
+
+      const newUsers = users.filter(
+        (user) => !state.userDMs.some((u) => u.id === user.id),
+      );
+      return { userDMs: [...updatedUserDMs, ...newUsers] };
+    }),
+}));
+
+type GroupChatState = {
+  groupChats: GroupChat[];
+  setGroupChats: (data: GroupChat[]) => void;
+};
+
+export const useGroupChatStore = create<GroupChatState>((set) => ({
+  groupChats: [],
+  setGroupChats: (data) => set(() => ({ groupChats: data })),
+}));

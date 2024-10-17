@@ -37,35 +37,27 @@ export const SocketEvent = {
 type SocketState = {
   isConnected: boolean;
   messages: Message[];
+  notifications: Message[];
+  isTyping: boolean;
 
+  setIsConnected: (isConnected: boolean) => void;
+  setIsTyping: (isTyping: boolean) => void;
   setNewMessage: (message: Message) => void;
   setMessagesFromDB: (messages: Message[]) => void;
-  initSocket: () => void;
-  sendSocketMessage: (data: Message) => void;
-  disconnect: () => void;
 };
 
 export const useSocketStore = create<SocketState>((set) => ({
   isConnected: false,
   messages: [],
+  notifications: [],
+  isTyping: false,
 
-  initSocket: () => {
-    socket.on(SocketEvent.Connect.Error, (error: Error) => {
-      console.error("Connection failed:", error);
-    });
-
-    socket.on(SocketEvent.Connect.Init, () => {
-      set({ isConnected: true });
-    });
-
-    socket.on(SocketEvent.Disconnect, () => {
-      set({ isConnected: false });
-    });
+  setIsConnected: (isConnected) => {
+    set({ isConnected });
   },
 
-  sendSocketMessage: (messageData: Message) => {
-    console.log("Sending message", messageData);
-    socket.emit(SocketEvent.Messages.New, messageData);
+  setIsTyping: (isTyping) => {
+    set({ isTyping });
   },
 
   setMessagesFromDB: (messages) => {
@@ -74,12 +66,5 @@ export const useSocketStore = create<SocketState>((set) => ({
 
   setNewMessage: (message) => {
     set((state) => ({ messages: [...state.messages, message] }));
-  },
-
-  disconnect: () => {
-    socket.off(SocketEvent.Connect.Init);
-    socket.off(SocketEvent.Disconnect);
-    socket.disconnect();
-    set({ isConnected: false });
   },
 }));
