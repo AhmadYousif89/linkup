@@ -1,47 +1,33 @@
 import { useEffect, useRef, useState } from "react";
 import { useUser } from "@clerk/clerk-react";
-import { cn, formatDate } from "@/lib/utils";
-import { motion } from "framer-motion";
-import { Message, User } from "@/lib/types";
 import { Loader } from "lucide-react";
+import { motion } from "framer-motion";
+
+import { cn } from "@/lib/utils";
+import { Message, User } from "@/lib/types";
+import { getMessagesFromDB } from "@/lib/actions";
+import { SocketEvent, socket, useSocketStore } from "@/lib/store";
 
 import FadeUp from "@/components/fade_up";
 import { useCurrentChatStore } from "../stores/chat";
-import { useProfilePanelStore } from "../stores/profile-panel";
-import { SocketEvent, socket, useSocketStore } from "@/lib/store";
-
-const getMessagesFromDB = async (chatId: string) => {
-  const tokenItem = localStorage.getItem("token");
-  const token = tokenItem ? JSON.parse(tokenItem) : null;
-  const VITE_SERVER_API = import.meta.env.VITE_SERVER_API;
-  if (!chatId) return [];
-  const res = await fetch(`${VITE_SERVER_API}/message/${chatId}`, {
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-  });
-  const messages = await res.json();
-  return messages as Message[];
-};
+import { useProfilePanelStore } from "../stores/side-panels";
 
 export function Messages() {
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const { currentChatUser } = useCurrentChatStore();
   const { setUserProfile } = useProfilePanelStore();
+  const { currentChatUser, currentChat } = useCurrentChatStore();
   const { messages, setMessagesFromDB, setNewMessage } = useSocketStore();
-
   const { user } = useUser();
 
   useEffect(() => {
     const fetchMessages = async () => {
       try {
-        if (currentChatUser?.chatId) {
+        if (currentChat?.id) {
           setIsLoading(true);
-          const messages = await getMessagesFromDB(currentChatUser.chatId);
+          const messages = await getMessagesFromDB(currentChat.id);
           setMessagesFromDB(messages);
-          socket.emit(SocketEvent.Chat.Join, currentChatUser.chatId);
+          socket.emit(SocketEvent.Chat.Join, currentChat.id);
         } else {
           setMessagesFromDB([]);
         }
@@ -53,18 +39,10 @@ export function Messages() {
     };
 
     fetchMessages();
-  }, [currentChatUser?.chatId]);
-
-  useEffect(() => {
-    if (chatContainerRef.current) {
-      chatContainerRef.current.scrollTop =
-        chatContainerRef.current.scrollHeight;
-    }
-  }, [messages]);
+  }, [currentChat?.id]);
 
   useEffect(() => {
     function handleMessageReceive(message: Message) {
-      console.log("Message recieved:", message);
       setNewMessage(message);
     }
     socket.on(SocketEvent.Messages.Recieved, handleMessageReceive);
@@ -94,11 +72,11 @@ export function Messages() {
   }
 
   return (
-    <div
+    <motion.div
       ref={chatContainerRef}
-      className="no-scrollbar flex h-full flex-col gap-4 overflow-y-auto overscroll-contain px-2 py-6 lg:px-4 2xl:px-8"
+      className="no-scrollbar relative flex h-full flex-col gap-4 overflow-y-scroll overscroll-contain px-2 py-6 lg:px-4 2xl:px-8"
     >
-      <motion.ul className="flex flex-col justify-between">
+      <motion.ul className="mt-auto flex flex-col justify-between">
         {messages.map((message, index) => {
           const isSender = message.sender.id !== currentChatUser?.id;
           const hasNextMessageFromSameUser =
@@ -119,7 +97,7 @@ export function Messages() {
                   hasNextMessageFromSameUser ? "invisible" : "",
                 )}
               >
-                {isSender ? message.sender.name : user?.fullName}
+                {!isSender ? message.sender.name : "Me"}
               </span>
               <div className="my-2 flex items-center gap-2">
                 <p
@@ -130,7 +108,7 @@ export function Messages() {
                       : "self-end rounded-tr-none bg-indigo-500",
                   )}
                 >
-                  {message.text}
+                  {message.content}
                 </p>
                 <button
                   className={cn(
@@ -148,54 +126,16 @@ export function Messages() {
               </div>
               <small
                 className={cn(
-                  "text-xs text-muted-foreground",
+                  "text-xs text-primary",
                   isSender ? "ml-10 self-start" : "mr-10 self-end",
                 )}
               >
-                {formatDate(message.timestamp)} {isSender ? "• Sent" : ""}
-              </small>
-            </FadeUp>
-          );
-
-          return (
-            <FadeUp
-              key={message.id}
-              className={cn(
-                "flex flex-col text-left lg:max-w-lg xl:max-w-2xl",
-                isSender ? "self-end" : "self-start",
-              )}
-            >
-              <small
-                className={cn(
-                  "mb-1 text-xs font-semibold text-muted-foreground",
-                  isSender ? "self-end" : "self-start",
-                )}
-              >
-                {isSender ? user?.fullName : message.sender.name}
-              </small>
-              <p
-                className={cn(
-                  "my-1 w-fit rounded-lg px-4 py-3 text-xs text-primary",
-                  !isSender
-                    ? "self-start rounded-tl-none bg-secondary"
-                    : "self-end rounded-tr-none bg-indigo-500",
-                )}
-              >
-                {message.text}
-              </p>
-              <small
-                className={cn(
-                  "text-xs text-muted-foreground",
-                  isSender ? "self-end" : "self-start",
-                )}
-              >
-                {formatDate(message.timestamp)}{" "}
-                {isSender ? "• Sent" : "• Received"}
+                {message.updatedAt} {isSender ? "• Sent" : ""}
               </small>
             </FadeUp>
           );
         })}
       </motion.ul>
-    </div>
+    </motion.div>
   );
 }
