@@ -126,19 +126,12 @@ class UserController {
           ],
         }
       : {};
+
     const users = await User.find(keyword)
       .find({ _id: { $ne: req.user._id } })
-      .select('_id name email pic updatedAt');
+      .select('-password');
 
-    const filteredUsers = users.map((user) => ({
-      id: user._id,
-      name: user.name,
-      email: user.email,
-      image: user.pic,
-      date: user.updatedAt,
-    }));
-
-    return res.status(200).json(filteredUsers);
+    return res.status(200).json(users);
   });
 }
 

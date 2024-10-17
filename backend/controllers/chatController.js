@@ -38,7 +38,7 @@ class ChatController {
 
     if (isChat.length > 0) {
       // Check if the dm is closedm if yes, open it
-      if (isChat[0].closedUsers && closedUsers.includes(req.user._id.toString())) {
+      if (isChat[0].closedUsers && isChat[0].closedUsers.includes(req.user._id.toString())) {
         await isChat[0].updateOne({
           $pull: { closedUsers: req.user._id.toString() },
         });
@@ -47,9 +47,6 @@ class ChatController {
       isChat[0].closedUsers =
         isChat[0].closedUsers &&
         isChat[0].closedUsers.filter((user) => user._id.toString() !== req.user._id.toString());
-
-      // Remove the current user from the obj before sending it
-      isChat[0].users = isChat[0].users.filter((user) => user._id.toString() === userId);
 
       // Remove the current user from the obj before sending it
       isChat[0].users = isChat[0].users.filter((user) => user._id.toString() === userId);
@@ -71,7 +68,7 @@ class ChatController {
       fullChat.users = fullChat.users.filter((user) => user._id.toString() === userId);
       return res.status(201).json(fullChat);
     } catch (error) {
-      console.log(error);
+      console.log('err', error);
       return res.status(400).json({ error: 'Cannot create Chat' });
     }
   });
@@ -149,7 +146,7 @@ class ChatController {
     }
 
     // Check if all users exist
-    let usersIds = JSON.parse(req.body.users);
+    let usersIds = req.body.users;
     // Add logged in user to users list
     usersIds.push(req.user._id.toString());
     // Remove any duplicates

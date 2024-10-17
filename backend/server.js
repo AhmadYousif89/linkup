@@ -67,6 +67,11 @@ const SocketEvent = {
     Greet: 'greet',
     Recieved: 'recieved',
   },
+  Notification: {
+    New: 'new',
+    Read: 'read',
+    Recieved: 'recieved',
+  },
   User: {
     IsTyping: 'user typing',
     IsNotTyping: 'user not typing',
