@@ -6,9 +6,9 @@ import {
   PanelRightClose,
   EllipsisVertical,
 } from "lucide-react";
-import { cn, formatDate } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { useProfilePanelStore } from "./stores/profile-panel";
+import { useProfilePanelStore } from "./stores/side-panels";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -23,8 +23,7 @@ import { toast } from "sonner";
 export function ProfilePanel() {
   const { isOpen, setIsOpen, userProfile, setUserProfile } =
     useProfilePanelStore();
-  const { currentChatUser, setCurrentChatUser, setCurrentChatData } =
-    useCurrentChatStore();
+  const { currentChat, setCurrentChat } = useCurrentChatStore();
 
   let profileContent = null;
   if (!userProfile) {
@@ -45,13 +44,10 @@ export function ProfilePanel() {
         .join(".")
     : "J.D";
 
-  const profileDate = userProfile?.timestamp
-    ? formatDate(userProfile.timestamp) + " - (GMT)"
-    : "";
+  const profileDate = userProfile?.updatedAt + " - (GMT)";
 
   const handleCloseDM = () => {
-    setCurrentChatUser(null);
-    setCurrentChatData([]);
+    setCurrentChat(null);
     setUserProfile(null);
   };
 
@@ -112,9 +108,7 @@ export function ProfilePanel() {
               </div>
               {/* User Info */}
               <div className="mt-8">
-                <p className="text-sm text-muted-foreground">
-                  {profileNameInitials}
-                </p>
+                <p className="text-sm text-muted-foreground">online</p>
                 <h3 className="text-sm font-semibold text-muted lg:text-base">
                   {profileName}
                 </h3>
@@ -151,7 +145,7 @@ export function ProfilePanel() {
                       <EllipsisVertical />
                     </Button>
                   </DropdownMenuTrigger>
-                  {currentChatUser?.id === userProfile?.id && (
+                  {currentChat?.id === userProfile?.id && (
                     <DropdownMenuContent
                       align="end"
                       alignOffset={6}

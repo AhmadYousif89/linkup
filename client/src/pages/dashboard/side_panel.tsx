@@ -19,8 +19,11 @@ import { UserRooms } from "./side_panel_contents/user_rooms";
 import { UserRequests } from "./side_panel_contents/user_requests";
 import { AddFriend } from "./side_panel_contents/add_friend";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
-import { Tab, useActiveTabStore } from "./stores/side-panel";
-import { useProfilePanelStore } from "./stores/profile-panel";
+import {
+  Tab,
+  useActiveTabStore,
+  useProfilePanelStore,
+} from "./stores/side-panels";
 import { useSocketStore } from "@/lib/store";
 
 function SocketConnectionState() {
@@ -44,7 +47,7 @@ export function SidePanel() {
       {/* SideBar */}
       <aside
         className={cn(
-          "relative z-50 flex min-w-20 flex-col bg-primary pb-5 md:border-r",
+          "relative z-50 flex min-w-16 flex-col bg-primary pb-5 md:border-r",
           activeTab ? "border-muted-foreground" : "border-transparent",
         )}
       >
@@ -68,8 +71,10 @@ export function SidePanel() {
         orientation="vertical"
         className={cn([
           "fixed z-30 h-full overflow-hidden md:relative md:left-0 md:max-w-xs xl:max-w-sm",
-          "transition-[width] duration-500 ease-in-out",
-          activeTab ? "w-80 md:w-full" : "w-0",
+          "transition-[width] ease-in-out",
+          activeTab
+            ? "w-80 duration-1000 md:w-full"
+            : "w-0 [transition-duration:350ms]",
         ])}
       >
         {/* Backdrop Overlay */}
@@ -79,7 +84,7 @@ export function SidePanel() {
               animate={{ x: 0 }}
               exit={{ x: "-100%" }}
               initial={{ x: "-100%" }}
-              transition={{ duration: 0.2 }}
+              transition={{ duration: 0.3 }}
               onClick={() => setActiveTab("")}
               className="fixed inset-0 z-20 overflow-hidden bg-muted-foreground/50 backdrop-blur-sm md:hidden"
             />
@@ -90,12 +95,12 @@ export function SidePanel() {
           {activeTab && (
             <motion.section
               initial={{ x: "-100%" }}
-              animate={{ x: window.innerWidth < 768 ? 81 : 0 }}
+              animate={{ x: window.innerWidth < 768 ? 65 : 0 }}
               exit={{ x: "-100%" }}
-              transition={{ duration: 0.4 }}
+              transition={{ duration: 0.35 }}
               className={cn([
                 "fixed left-0 z-30 h-full overflow-hidden bg-primary text-secondary md:relative",
-                "min-w-[75vw] ease-in-out md:min-w-80",
+                "min-w-[75vw] md:min-w-80",
               ])}
             >
               {/* Connect with others */}
@@ -152,7 +157,7 @@ function Triggers() {
                 }
               }}
               data-state={activeTab === value ? "active" : "inactive"}
-              className="group relative size-8 bg-primary p-1.5 text-muted-foreground duration-300 ease-in-out hover:text-muted data-[state=active]:bg-indigo-600"
+              className="group relative size-8 bg-primary p-1.5 text-muted-foreground duration-500 ease-in-out hover:text-muted data-[state=active]:bg-indigo-600"
             >
               {/* {label === "Requests" && (
                 <span className="absolute right-0 top-0 -mr-1 -mt-1 size-3 rounded-full bg-green-300 before:absolute before:inset-0 before:size-3 before:animate-ping before:rounded-full before:bg-green-100" />
@@ -173,7 +178,7 @@ function Triggers() {
         <ThemeSwitcher />
         <Button
           asChild
-          className="group size-8 border border-muted-foreground bg-primary p-1 text-muted-foreground transition-all duration-300 ease-in-out hover:border-none hover:bg-indigo-500"
+          className="group size-8 border border-muted-foreground bg-primary p-1 text-muted-foreground transition-all duration-500 ease-in-out hover:border-none hover:bg-indigo-500"
         >
           <Link to="/home">
             <ArrowBigLeft className="group-hover:text-primary" />
