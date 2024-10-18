@@ -1,16 +1,16 @@
 import { Loader } from "lucide-react";
 import { motion } from "framer-motion";
+import { useUser } from "@clerk/clerk-react";
 import { useEffect, useRef, useState } from "react";
 
-import { cn } from "@/lib/utils";
-import { Message, User } from "@/lib/types";
+import { cn, formatDate } from "@/lib/utils";
+import { User } from "@/lib/types";
+import { useSocketStore } from "@/lib/store";
 import { getMessagesFromDB } from "@/lib/actions";
-import { SocketEvent, socket, useSocketStore } from "@/lib/store";
 
 import FadeUp from "@/components/fade_up";
 import { useCurrentChatStore } from "../stores/chat";
 import { useProfilePanelStore } from "../stores/side-panels";
-import { useUser } from "@clerk/clerk-react";
 import { useScrollToBottom } from "@/hooks/use_scrollToBottom";
 
 export function Messages() {
@@ -18,7 +18,7 @@ export function Messages() {
   const [isLoading, setIsLoading] = useState(false);
   const { setUserProfile } = useProfilePanelStore();
   const { currentChatUser, currentChat } = useCurrentChatStore();
-  const { messages, setMessagesFromDB, setNewMessage } = useSocketStore();
+  const { messages, setMessagesFromDB, emitJoinChat } = useSocketStore();
   const { user } = useUser();
 
   useEffect(() => {
@@ -28,9 +28,7 @@ export function Messages() {
           setIsLoading(true);
           const messages = await getMessagesFromDB(currentChat.id);
           setMessagesFromDB(messages);
-          socket.emit(SocketEvent.Chat.Join, currentChat.id);
-        } else {
-          setMessagesFromDB([]);
+          emitJoinChat(currentChat.id);
         }
       } catch (error) {
         console.error(error);
@@ -42,25 +40,14 @@ export function Messages() {
     fetchMessages();
   }, [currentChat?.id]);
 
-  useEffect(() => {
-    function handleMessageReceive(message: Message) {
-      setNewMessage(message);
-    }
-    socket.on(SocketEvent.Messages.Recieved, handleMessageReceive);
-
-    return () => {
-      socket.off(SocketEvent.Messages.Recieved, handleMessageReceive);
-    };
-  }, []);
-
-  const { scrollWithDelay } = useScrollToBottom(chatContainerRef, {
-    duration: 5,
+  const scrollWithDelay = useScrollToBottom(chatContainerRef, {
     type: "spring",
     ease: "easeInOut",
+    damping: 100,
   });
 
   useEffect(() => {
-    if (messages.length) scrollWithDelay(300);
+    if (messages.length) scrollWithDelay(100);
   }, [messages.length]);
 
   if (isLoading) {
@@ -76,7 +63,7 @@ export function Messages() {
       <div className="flex h-full items-center justify-center text-center">
         <p className="text-sm text-muted-foreground">
           This is the beginning of your chat with{" "}
-          <p className="text-lg font-semibold">{currentChatUser?.name}</p>
+          <span className="text-lg font-semibold">{currentChatUser?.name}</span>
         </p>
       </div>
     );
@@ -89,9 +76,9 @@ export function Messages() {
     >
       <motion.ul className="mt-auto flex flex-col justify-between">
         {messages.map((message, index) => {
-          const isSender = message.sender.id !== currentChatUser?.id;
+          const isSender = message?.sender?.id !== currentChatUser?.id;
           const hasNextMessageFromSameUser =
-            messages[index - 1]?.sender.id === messages[index].sender.id;
+            messages[index - 1]?.sender?.id === messages[index]?.sender?.id;
 
           return (
             <FadeUp
@@ -108,7 +95,7 @@ export function Messages() {
                   hasNextMessageFromSameUser ? "invisible" : "",
                 )}
               >
-                {!isSender ? message.sender.name : "Me"}
+                {!isSender ? message.sender?.name : "Me"}
               </span>
               <div className="my-2 flex items-center gap-2">
                 <p
@@ -129,7 +116,7 @@ export function Messages() {
                   onClick={() => setUserProfile(message.sender as User)}
                 >
                   <img
-                    src={!isSender ? message.sender.image : user?.imageUrl}
+                    src={!isSender ? message.sender?.image : user?.imageUrl}
                     alt="profile image"
                     className="aspect-square size-full rounded-full object-cover"
                   />
@@ -141,7 +128,7 @@ export function Messages() {
                   isSender ? "ml-10 self-start" : "mr-10 self-end",
                 )}
               >
-                {message.updatedAt} {isSender ? "• Sent" : ""}
+                {formatDate(message.updatedAt)} {isSender ? "• Sent" : ""}
               </small>
             </FadeUp>
           );

@@ -16,11 +16,11 @@ import { TabsContent } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 import { User } from "@/lib/types";
-import { formatApiData } from "@/lib/utils";
+import { cn, formatApiData, formatDate } from "@/lib/utils";
 import { useCurrentChatStore, useUserDMsStore } from "../stores/chat";
 import { useActiveTabStore, useProfilePanelStore } from "../stores/side-panels";
-import { SocketEvent, socket } from "@/lib/store";
 import { createUserDM } from "@/lib/actions";
+import { useSocketStore } from "@/lib/store";
 
 const getUserDMs = async () => {
   const tokenItem = localStorage.getItem("token");
@@ -123,7 +123,9 @@ type RenderDMsResultProps = {
 function RenderDMsResult({ userDMs, searchTerm }: RenderDMsResultProps) {
   const { setActiveTab } = useActiveTabStore();
   const { setUserProfile, setIsOpen } = useProfilePanelStore();
-  const { currentChat, setCurrentChat } = useCurrentChatStore();
+  const { currentChat, setCurrentChat, currentChatUser } =
+    useCurrentChatStore();
+  const { userStatus, emitLeaveChat } = useSocketStore();
 
   const errorMessage =
     searchTerm && userDMs.length === 0 ? "No results found" : "";
@@ -135,6 +137,11 @@ function RenderDMsResult({ userDMs, searchTerm }: RenderDMsResultProps) {
         : "";
 
   const handleStartChat = async (user: User) => {
+    if (currentChat && user.id === currentChatUser?.id) return;
+    if (currentChat && user.id !== currentChatUser?.id) {
+      emitLeaveChat(currentChat?.id);
+      setCurrentChat(null);
+    }
     try {
       const userFetchedChat = await createUserDM(user.id);
       setCurrentChat(userFetchedChat);
@@ -145,8 +152,8 @@ function RenderDMsResult({ userDMs, searchTerm }: RenderDMsResultProps) {
   };
 
   const handleCloseDM = () => {
-    const chatId = currentChat?.id || "";
-    socket.emit(SocketEvent.Chat.Leave, chatId);
+    if (!currentChat) return;
+    emitLeaveChat(currentChat.id);
     setCurrentChat(null);
   };
 
@@ -184,7 +191,14 @@ function RenderDMsResult({ userDMs, searchTerm }: RenderDMsResultProps) {
                 >
                   <div className="relative flex items-center gap-4 text-left">
                     {/* Status Indecator */}
-                    <span className="absolute bottom-0 left-1 size-2 rounded-full bg-green-400 ring-2 ring-muted" />
+                    <span
+                      className={cn(
+                        "absolute bottom-0 left-1 size-2 rounded-full ring-2 ring-primary",
+                        userStatus[user.id] === "online"
+                          ? "bg-green-500"
+                          : "bg-red-500",
+                      )}
+                    />
                     <DropdownMenu>
                       <DropdownMenuTrigger className="size-10 overflow-hidden rounded-full bg-secondary/50 p-[2px] text-xs">
                         <img
@@ -225,7 +239,7 @@ function RenderDMsResult({ userDMs, searchTerm }: RenderDMsResultProps) {
                     </div>
                   </div>
                   <div className="text-xs font-semibold text-muted/70">
-                    {user.updatedAt}
+                    {formatDate(user.updatedAt)}
                   </div>
                 </div>
               </FadeUp.li>

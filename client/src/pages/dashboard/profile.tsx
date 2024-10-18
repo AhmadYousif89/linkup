@@ -6,7 +6,7 @@ import {
   PanelRightClose,
   EllipsisVertical,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, formatDate } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useProfilePanelStore } from "./stores/side-panels";
 import {
@@ -44,7 +44,7 @@ export function ProfilePanel() {
         .join(".")
     : "J.D";
 
-  const profileDate = userProfile?.updatedAt + " - (GMT)";
+  const profileDate = formatDate(userProfile?.updatedAt) + " - (GMT)";
 
   const handleCloseDM = () => {
     setCurrentChat(null);

@@ -1,23 +1,23 @@
-import { toast } from "sonner";
 import { useEffect, useRef, useState } from "react";
-import { useUser } from "@clerk/clerk-react";
 import { Paperclip, Send } from "lucide-react";
+import { useUser } from "@clerk/clerk-react";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 
 import { useCurrentChatStore } from "../stores/chat";
-import { SocketEvent, socket, useSocketStore } from "@/lib/store";
+import { useSocketStore } from "@/lib/store";
 import { sendMessage } from "@/lib/actions";
 
 export function InputMessage() {
-  const [messageValue, setMessageValue] = useState("");
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const { currentChat: currentChatUser } = useCurrentChatStore();
-  const { setNewMessage, setIsTyping } = useSocketStore();
   const { user } = useUser();
-  const typingTimeoutRef = useRef(null);
+  const [msgContent, setMsgContent] = useState("");
+  const typingTimeoutRef = useRef<number | null>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const { isTyping, setNewMessage, emitTyping, emitMessage } = useSocketStore();
+  const { currentChat } = useCurrentChatStore();
 
   useEffect(() => {
     const textarea = textareaRef.current;
@@ -25,62 +25,44 @@ export function InputMessage() {
       textarea.style.height = "36px";
       textarea.style.height = `${Math.min(textarea.scrollHeight, 80)}px`;
     }
-  }, [messageValue]);
-
-  useEffect(() => {
-    socket.on(SocketEvent.User.IsTyping, () => {
-      setIsTyping(true);
-    });
-
-    socket.on(SocketEvent.User.IsNotTyping, () => {
-      setIsTyping(false);
-    });
-
-    return () => {
-      socket.off(SocketEvent.User.IsTyping);
-      socket.off(SocketEvent.User.IsNotTyping);
-    };
-  }, []);
+  }, [msgContent]);
 
   const handleMessageChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const chatId = currentChatUser?.id;
-    socket.emit(SocketEvent.User.IsTyping, chatId);
-    setMessageValue(e.target.value);
+    if (!currentChat) return;
+    if (e.target.value.length > 200) {
+      return toast.error("Message is too long");
+    }
 
+    const chatId = currentChat.id;
+    emitTyping(chatId, true);
+    setMsgContent(e.target.value);
     // Clear the previous timeout
     if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
-
     // Set a new timeout
     typingTimeoutRef.current = setTimeout(() => {
-      socket.emit(SocketEvent.User.IsNotTyping, chatId);
-    }, 2000) as unknown as null;
-  };
-  const handleInputBlur = () => {
-    const chatId = currentChatUser?.id;
-    socket.emit(SocketEvent.User.IsNotTyping, chatId);
+      emitTyping(chatId, false);
+    }, 2000) as unknown as number;
   };
 
   const handleSendMessage = async () => {
-    if (!messageValue) return toast.error("Message is required");
-    if (!currentChatUser) return toast.error("User not found");
+    if (!msgContent) return toast.error("Message is required");
+    if (!currentChat) throw new Error("Chat not found");
 
-    const chatId = currentChatUser?.id;
+    const chatId = currentChat.id;
     try {
-      const message = await sendMessage(messageValue, chatId);
+      const message = await sendMessage(msgContent, chatId);
       console.log("Message sent:", message);
-      socket.emit(SocketEvent.Messages.New, message);
+      emitMessage(message);
+      setMsgContent("");
       setNewMessage(message);
-      setMessageValue("");
       textareaRef.current?.focus();
-      socket.emit(SocketEvent.User.IsNotTyping, chatId);
     } catch (error) {
-      if (error instanceof Error) console.error(error.message);
+      if (error instanceof Error) console.error(error);
     }
   };
 
   const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-
     if (!user) throw new Error("User not found");
 
     try {
@@ -93,11 +75,13 @@ export function InputMessage() {
   return (
     <form
       onSubmit={onSubmit}
-      className="relative z-[100] flex items-center justify-between gap-1 border-t-2 border-muted-foreground bg-primary px-2 py-5"
+      className="relative z-[100] flex items-center justify-between gap-1 border-t-2 border-muted-foreground bg-primary px-2 py-8"
     >
-      {/* {isTyping && (
-        <span className="animate-typing absolute left-8 top-2 inline-flex rounded-full p-1" />
-      )} */}
+      {isTyping && (
+        <small className="absolute top-0 mt-1.5 text-xs font-bold text-indigo-400">
+          {user?.fullName} is typing . . .
+        </small>
+      )}
       <div
         className="flex flex-1 items-center justify-between gap-1"
         aria-label="Input message"
@@ -106,14 +90,13 @@ export function InputMessage() {
           <Textarea
             id="message"
             ref={textareaRef}
-            value={messageValue}
+            value={msgContent}
             onKeyDown={(e) => {
               if (e.key === "Enter" && !e.shiftKey) {
                 e.preventDefault();
                 handleSendMessage();
               }
             }}
-            onBlur={handleInputBlur}
             onChange={handleMessageChange}
             style={{ resize: "none" }}
             placeholder="Type a message ..."
