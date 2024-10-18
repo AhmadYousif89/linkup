@@ -13,7 +13,7 @@ export type Sender = {
   name: string;
   email: string;
   image: string;
-};
+} | null;
 
 export type LatestMessage = {
   id: string;
@@ -28,6 +28,7 @@ export type LatestMessage = {
 export type Chat = {
   id: string;
   chatName: string;
+  closedUsers: string[];
   isGroupChat: boolean;
   users: User[];
   createdAt: string;
@@ -39,16 +40,8 @@ export type Message = {
   id: string;
   content: string;
   sender: Sender;
-  chat: {
-    id: string;
-    chatName: string;
-    isGroupChat: boolean;
-    users: string[];
-    createdAt: string;
-    updatedAt: string;
-    latestMessage: string;
-  };
-  readBy: any[];
+  chat: Chat;
+  readBy: string[];
   createdAt: string;
   updatedAt: string;
 };
@@ -61,7 +54,7 @@ export type GroupChat = {
   isGroupChat: boolean;
   users: User[];
   groupAdmin: GroupAdmin;
-  closedUsers: any[];
+  closedUsers: string[];
   createdAt: string;
   updatedAt: string;
 };

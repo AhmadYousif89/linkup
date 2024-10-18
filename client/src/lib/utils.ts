@@ -6,7 +6,11 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export function formatDate(date: string, options?: Intl.DateTimeFormatOptions) {
+export function formatDate(
+  date: string | undefined,
+  options?: Intl.DateTimeFormatOptions,
+) {
+  if (!date) return;
   return new Intl.DateTimeFormat("default", {
     hour: "numeric",
     minute: "numeric",
@@ -60,8 +64,8 @@ function formatUser(user: any): User {
     name: user.name,
     email: user.email,
     image: user.pic,
-    createdAt: formatDate(user.createdAt),
-    updatedAt: formatDate(user.createdAt),
+    createdAt: user.createdAt,
+    updatedAt: user.createdAt,
   };
 }
 
@@ -78,17 +82,20 @@ function formatSender(sender: any): Sender {
   };
 }
 
-function formatLatestMessage(latestMessage: any): LatestMessage | null {
+function formatLatestMessage(
+  latestMessage: any,
+): LatestMessage | string | null {
   if (!latestMessage) return null;
+  if (typeof latestMessage === "string") return latestMessage;
 
   return {
     id: latestMessage._id,
     content: latestMessage.content,
-    sender: formatSender(latestMessage.sender),
+    sender: latestMessage.sender ? formatSender(latestMessage.sender) : null,
     chatId: latestMessage.chat,
     readBy: latestMessage.readBy,
-    createdAt: formatDate(latestMessage.createdAt),
-    updatedAt: formatDate(latestMessage.updatedAt),
+    createdAt: latestMessage.createdAt,
+    updatedAt: latestMessage.updatedAt,
   };
 }
 
@@ -97,18 +104,10 @@ function formatMessage(message: any): Message {
     id: message._id,
     content: message.content,
     sender: formatSender(message.sender),
-    chat: {
-      id: message.chat,
-      chatName: message.chatName,
-      isGroupChat: message.isGroupChat,
-      users: message.users,
-      createdAt: formatDate(message.createdAt),
-      updatedAt: formatDate(message.updatedAt),
-      latestMessage: message.latestMessage,
-    },
+    chat: formatChat(message.chat),
     readBy: message.readBy,
-    createdAt: formatDate(message.createdAt),
-    updatedAt: formatDate(message.updatedAt),
+    createdAt: message.createdAt,
+    updatedAt: message.updatedAt,
   };
 }
 
@@ -116,11 +115,15 @@ function formatChat(chat: any): Chat {
   return {
     id: chat._id,
     chatName: chat.chatName,
+    closedUsers: chat.closedUsers || [],
     isGroupChat: chat.isGroupChat,
     users: formatUsers(chat.users),
-    latestMessage: formatLatestMessage(chat.latestMessage),
-    createdAt: formatDate(chat.createdAt),
-    updatedAt: formatDate(chat.updatedAt),
+    latestMessage:
+      typeof chat.latestMessage === "string"
+        ? chat.latestMessage
+        : formatLatestMessage(chat.latestMessage),
+    createdAt: chat.createdAt,
+    updatedAt: chat.updatedAt,
   };
 }
 
@@ -134,7 +137,7 @@ function formatGroupChat(groupChat: any): GroupChat | null {
     users: groupChat.users ? formatUsers(groupChat.users) : [],
     groupAdmin: groupChat.groupAdmin ? formatUser(groupChat.groupAdmin) : null,
     closedUsers: groupChat.closedUsers || [],
-    createdAt: formatDate(groupChat.createdAt),
-    updatedAt: formatDate(groupChat.updatedAt),
+    createdAt: groupChat.createdAt,
+    updatedAt: groupChat.updatedAt,
   };
 }
