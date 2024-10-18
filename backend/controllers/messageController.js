@@ -25,7 +25,7 @@ class MessageController {
       }
 
       const currentUser = chat.users.find(
-        (user) => user._id.toString() === req.user._id.toString()
+        (user) => user._id.toString() === req.user._id.toString(),
       );
 
       if (!currentUser) {
@@ -52,9 +52,8 @@ class MessageController {
         select: 'name pic',
       });
 
-
       await Chat.findByIdAndUpdate(chatId, { latestMessage: message });
-      return res.status(201).json(data);
+      return res.status(201).json(message);
     } catch (error) {
       console.log(error);
       return res.status(400).json({ error: 'Failed to send message' });
@@ -73,11 +72,7 @@ class MessageController {
       if (!chat) {
         console.log('Chat not found');
         return res.status(400).json('Chat not found');
-      } else if (
-        !chat.users.find(
-          (user) => user._id.toString() === req.user._id.toString()
-        )
-      ) {
+      } else if (!chat.users.find((user) => user._id.toString() === req.user._id.toString())) {
         console.log('User not found in chat');
         return res.status(400).json('User not found in chat');
       }
