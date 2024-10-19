@@ -24,7 +24,11 @@ LinkUp is a real-time chat application that allows users to create chat rooms an
 
 ## The presentation
 
+[LinkUp Presentation](https://docs.google.com/presentation/d/1TitFRNG5WmF0RtF-CoTW61k3OW5bwW5Pr2SIBrvStHY/edit?usp=sharing)<br/>
+
 ## Video Demo
+
+[LinkUp Demo](https://drive.google.com/file/d/1ab143Nn5-YL-07s-GyXRnoaYx0rVUnb6/view?usp=sharing)<br/>
 
 ## Features
 
