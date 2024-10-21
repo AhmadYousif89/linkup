@@ -9,8 +9,8 @@ export function HeroSection() {
   const { user } = useUser();
 
   return (
-    <section className="relative mt-16 grid h-[80svh]">
-      <p className="absolute left-1/2 mb-4 flex w-full max-w-xs -translate-x-1/2 cursor-default items-center justify-center rounded-full border bg-gradient-to-br from-transparent to-secondary py-1.5">
+    <section className="relative grid h-[80svh] place-items-center">
+      <p className="absolute left-1/2 top-16 mb-4 flex w-full max-w-xs -translate-x-1/2 cursor-default items-center justify-center rounded-full border bg-gradient-to-br from-transparent to-secondary py-1.5 lg:top-32">
         <SparklesIcon
           aria-label="Sparkles icon"
           className="absolute left-4 size-4 text-indigo-400"
@@ -31,7 +31,7 @@ export function HeroSection() {
         </h1>
 
         <h3 className="mt-8 text-balance text-sm md:text-base">
-          <span className="inline-block max-w-[80ch] text-muted-foreground">
+          <span className="inline-block max-w-[80ch] text-primary dark:text-muted-foreground">
             Stay in touch with your loved ones, anywhere. Enjoy seamless
             messaging, group chats, and multimedia sharing.
           </span>
@@ -43,7 +43,7 @@ export function HeroSection() {
             asChild
             size={"lg"}
             variant={"ghost"}
-            className="h-10 w-28 rounded-lg border border-primary bg-gradient-to-br from-primary/10 via-muted/10 to-indigo-500 p-0 font-semibold shadow hover:bg-muted/20"
+            className="h-10 w-28 rounded-lg border bg-primary/10 bg-gradient-to-br from-primary/10 via-muted/10 to-indigo-500 p-0 font-semibold text-secondary shadow hover:bg-muted/20 dark:border-primary dark:text-primary"
           >
             {user ? (
               <Link
@@ -60,9 +60,9 @@ export function HeroSection() {
           </Button>
           <Button
             variant={"ghost"}
-            className="h-10 w-28 gap-2 rounded-lg border border-primary font-semibold text-primary shadow hover:bg-input/50"
+            className="group h-10 w-28 gap-2 rounded-lg border bg-primary/10 font-semibold text-secondary shadow hover:bg-input/50 dark:border-primary dark:text-primary"
           >
-            <GithubIcon className="size-5 fill-primary" />
+            <GithubIcon className="size-5 fill-secondary group-hover:fill-primary dark:fill-primary" />
             <a
               href="https://github.com/AhmadYousif89/linkup"
               target="_blank"
