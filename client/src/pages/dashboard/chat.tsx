@@ -10,11 +10,11 @@ import { InputMessage } from "./main_content/input_message";
 import { useSocketStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
 
-export function MainContent() {
+export function Chat() {
+  const { userStatus } = useSocketStore();
   const { setActiveTab } = useActiveTabStore();
   const { currentChatUser } = useCurrentChatStore();
   const { isOpen, setIsOpen, setUserProfile } = useProfilePanelStore();
-  const { userStatus } = useSocketStore();
 
   const userName = currentChatUser?.name || "John Doe";
   const intials = userName
@@ -22,13 +22,14 @@ export function MainContent() {
     .map((n: string) => n[0])
     .join("");
   const currentChatUserStatus = userStatus[currentChatUser?.id || ""];
+  console.log(currentChatUserStatus);
 
   return (
     <>
-      {/* Chat Header */}
-      <header className="flex min-h-16 items-center justify-between border-b-2 border-muted-foreground bg-primary px-4 lg:px-6">
+      <header className="flex min-h-16 items-center justify-between border-b border-muted-foreground/25 bg-muted px-4 dark:border-muted-foreground lg:px-6">
         <div className="flex items-center gap-2">
-          <button
+          <Button
+            size="icon"
             onClick={() => {
               if (currentChatUser) {
                 setUserProfile(currentChatUser);
@@ -37,10 +38,13 @@ export function MainContent() {
             }}
             className={cn(
               "relative flex size-10 items-center justify-center rounded-full bg-muted-foreground p-[2px]",
-              "before:absolute before:bottom-0 before:left-0",
-              "before:size-3] before:rounded-full before:border-2 before:border-primary before:bg-secondary",
-              currentChatUserStatus === "offline" && "before:bg-destructive",
-              currentChatUserStatus === "online" && "before:bg-green-500",
+              "before:absolute before:bottom-0 before:left-0 before:size-2.5",
+              "before:rounded-full before:border",
+              currentChatUserStatus === "online"
+                ? "before:bg-green-500"
+                : currentChatUserStatus === "offline"
+                  ? "before:bg-destructive"
+                  : "before:bg-muted-foreground",
             )}
           >
             <img
@@ -48,31 +52,34 @@ export function MainContent() {
               src={currentChatUser?.image || "/user.png"}
               className="aspect-square rounded-full object-cover"
             />
-          </button>
+          </Button>
           {/* Active User */}
           <div className="*:block">
-            <span className="text-sm font-semibold text-muted">{userName}</span>
-            <small className="text-xs font-medium text-muted-foreground">
+            <span className="text-sm font-semibold">{userName}</span>
+            <span className="text-xs font-medium text-muted-foreground">
               Reply to message
-            </small>
+            </span>
           </div>
         </div>
         {/* Chat Tools */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2">
           <Button
-            size={"icon"}
-            className="size-6 p-1 text-muted-foreground hover:text-muted lg:size-7"
+            size="icon"
+            variant="outline"
+            className="size-6 bg-transparent p-1 text-muted-foreground dark:border-muted-foreground lg:size-7"
           >
             <Video />
           </Button>
           <Button
-            size={"icon"}
-            className="size-6 p-1 text-muted-foreground hover:text-muted lg:size-7"
+            size="icon"
+            variant="outline"
+            className="size-6 bg-transparent p-1 text-muted-foreground dark:border-muted-foreground lg:size-7"
           >
             <Phone />
           </Button>
           <Button
-            size={"icon"}
+            size="icon"
+            variant="outline"
             aria-pressed={isOpen}
             onClick={() => {
               setIsOpen(!isOpen);
@@ -80,14 +87,13 @@ export function MainContent() {
                 setActiveTab("");
               }
             }}
-            className="size-5 p-0 lg:size-7"
+            className="size-6 bg-transparent p-1 text-muted-foreground dark:border-muted-foreground lg:size-7"
           >
-            <Info className={isOpen ? "text-muted" : "text-muted-foreground"} />
+            <Info />
           </Button>
         </div>
       </header>
 
-      {/* Chat Messages */}
       <Messages />
 
       <InputMessage />
