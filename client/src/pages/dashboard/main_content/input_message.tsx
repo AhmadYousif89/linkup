@@ -75,7 +75,7 @@ export function InputMessage() {
   return (
     <form
       onSubmit={onSubmit}
-      className="relative z-[100] flex items-center justify-between gap-1 border-t-2 border-muted-foreground bg-primary px-2 py-8"
+      className="relative mt-auto flex items-center justify-between gap-1 border-t border-muted-foreground/25 bg-muted px-2 pb-4 pt-8 dark:border-muted-foreground"
     >
       {isTyping && (
         <small className="absolute top-0 mt-1.5 text-xs font-bold text-indigo-400">
@@ -100,14 +100,14 @@ export function InputMessage() {
             onChange={handleMessageChange}
             style={{ resize: "none" }}
             placeholder="Type a message ..."
-            className="min-h-9 rounded border-none bg-muted-foreground/25 text-secondary placeholder:text-xs"
+            className="min-h-9 w-full rounded border-none text-primary placeholder:text-xs dark:bg-muted-foreground dark:text-secondary dark:placeholder:text-primary"
           />
         </Label>
         <Button
           size="icon"
           type="button"
           variant="ghost"
-          className="size-8 p-2 text-muted-foreground hover:border-none hover:bg-indigo-500"
+          className="size-8 p-2 text-muted-foreground hover:border-none hover:bg-indigo-500 hover:text-secondary dark:hover:text-primary"
         >
           <Paperclip />
         </Button>
@@ -116,7 +116,7 @@ export function InputMessage() {
         size="icon"
         type="submit"
         variant="ghost"
-        className="size-9 border border-muted-foreground bg-primary p-2 text-secondary hover:border-none hover:bg-indigo-500"
+        className="size-8 border p-2 text-muted-foreground hover:border-none hover:bg-indigo-500 hover:text-secondary dark:border-muted-foreground dark:hover:text-primary"
       >
         <Send />
       </Button>

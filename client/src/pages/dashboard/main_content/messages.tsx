@@ -41,14 +41,16 @@ export function Messages() {
   }, [currentChat?.id]);
 
   const scrollWithDelay = useScrollToBottom(chatContainerRef, {
-    type: "spring",
     ease: "easeInOut",
     damping: 100,
+    duration: 2,
   });
 
   useEffect(() => {
-    if (messages.length) scrollWithDelay(100);
+    if (messages.length) scrollWithDelay();
   }, [messages.length]);
+
+  if (!currentChatUser) return;
 
   if (isLoading) {
     return (
@@ -58,13 +60,24 @@ export function Messages() {
     );
   }
 
+  const chatUserInitials = currentChatUser.name
+    .split(" ")
+    .map((n: string) => n[0])
+    .join("");
   if (messages.length === 0) {
     return (
-      <div className="flex h-full items-center justify-center text-center">
-        <p className="text-sm text-muted-foreground">
-          This is the beginning of your chat with{" "}
-          <span className="text-lg font-semibold">{currentChatUser?.name}</span>
+      <div className="flex h-full flex-col items-center justify-center text-center font-medium">
+        <div className="mb-6 flex size-52 items-center justify-center self-center overflow-hidden rounded-full bg-gradient-to-br from-muted-foreground via-input to-indigo-400 p-1 shadow-lg">
+          <img
+            src={currentChatUser.image || "/user.png"}
+            alt={chatUserInitials}
+            className="grid aspect-square size-full place-content-center rounded-full bg-muted-foreground object-cover text-secondary"
+          />
+        </div>
+        <p className="text-sm text-muted-foreground xl:text-lg">
+          This is the beginning of your chat with
         </p>
+        <p className="text-lg xl:text-2xl">{currentChatUser.name}</p>
       </div>
     );
   }
@@ -72,13 +85,14 @@ export function Messages() {
   return (
     <motion.div
       ref={chatContainerRef}
-      className="no-scrollbar relative flex h-full flex-col gap-4 overflow-y-scroll overscroll-contain px-2 py-6 lg:px-4 2xl:px-8"
+      className="no-scrollbar relative flex h-full flex-col overflow-y-scroll overscroll-contain px-2 py-6 lg:px-4 2xl:px-8"
     >
-      <motion.ul className="mt-auto flex flex-col justify-between">
+      <motion.ul className={cn("mt-auto flex flex-col justify-between")}>
         {messages.map((message, index) => {
-          const isSender = message?.sender?.id !== currentChatUser?.id;
-          const hasNextMessageFromSameUser =
-            messages[index - 1]?.sender?.id === messages[index]?.sender?.id;
+          const isSender = message.sender.id !== currentChatUser.id;
+          const IsSameSender =
+            messages[index].sender.id ===
+            (index > 0 && messages[index - 1].sender.id);
 
           return (
             <FadeUp
@@ -88,48 +102,50 @@ export function Messages() {
                 isSender ? "items-start self-start" : "items-end self-end",
               )}
             >
-              <span
-                className={cn(
-                  "text-xs font-semibold text-muted-foreground",
-                  isSender ? "ml-10 self-start" : "mr-10 self-end",
-                  hasNextMessageFromSameUser ? "invisible" : "",
-                )}
-              >
-                {!isSender ? message.sender?.name : "Me"}
-              </span>
-              <div className="my-2 flex items-center gap-2">
-                <p
+              <div data-isSameSender={IsSameSender}>
+                <span
                   className={cn(
-                    "w-fit rounded-lg px-4 py-3 text-xs text-primary md:text-sm",
-                    isSender
-                      ? "order-1 self-start rounded-tl-none bg-secondary"
-                      : "self-end rounded-tr-none bg-indigo-500",
+                    "text-xs font-medium text-muted-foreground",
+                    isSender ? "ml-10 self-start" : "mr-10 self-end",
+                    IsSameSender ? "hidden" : "",
                   )}
                 >
-                  {message.content}
-                </p>
-                <button
+                  {!isSender ? message.sender?.name : "Me"}
+                </span>
+                <div className="my-2 flex items-center gap-2">
+                  <p
+                    className={cn(
+                      "w-fit rounded-lg px-4 py-3 text-xs text-secondary md:text-sm",
+                      isSender
+                        ? "order-1 self-start rounded-tl-none bg-primary"
+                        : "self-end rounded-tr-none bg-indigo-500 dark:text-primary",
+                    )}
+                  >
+                    {message.content}
+                  </p>
+                  <button
+                    className={cn(
+                      "aspect-square size-7 self-start rounded-full bg-gradient-to-br from-primary via-input to-indigo-500 p-[2px]",
+                      IsSameSender ? "invisible" : "",
+                    )}
+                    onClick={() => setUserProfile(message.sender as User)}
+                  >
+                    <img
+                      src={!isSender ? message.sender?.image : user?.imageUrl}
+                      alt=""
+                      className="aspect-square size-full rounded-full object-cover"
+                    />
+                  </button>
+                </div>
+                <small
                   className={cn(
-                    "aspect-square size-7 self-start rounded-full bg-muted-foreground p-[2px]",
-                    hasNextMessageFromSameUser ? "invisible" : "",
+                    "text-xs text-muted-foreground",
+                    isSender ? "ml-10 self-start" : "mr-10 self-end",
                   )}
-                  onClick={() => setUserProfile(message.sender as User)}
                 >
-                  <img
-                    src={!isSender ? message.sender?.image : user?.imageUrl}
-                    alt="profile image"
-                    className="aspect-square size-full rounded-full object-cover"
-                  />
-                </button>
+                  {formatDate(message.updatedAt)} {isSender ? "• Sent" : ""}
+                </small>
               </div>
-              <small
-                className={cn(
-                  "text-xs text-primary",
-                  isSender ? "ml-10 self-start" : "mr-10 self-end",
-                )}
-              >
-                {formatDate(message.updatedAt)} {isSender ? "• Sent" : ""}
-              </small>
             </FadeUp>
           );
         })}

@@ -1,4 +1,4 @@
-import { Loader, Plus, PlusSquare, Search, X } from "lucide-react";
+import { Loader, Plus, EllipsisVertical, Search, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -27,6 +27,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { cn } from "@/lib/utils";
+import { useActiveTabStore } from "../stores/side-panels";
+import { Card } from "@/components/ui/card";
 
 export function UserRooms() {
   const [users, setUsers] = useState<User[]>([]);
@@ -36,9 +39,12 @@ export function UserRooms() {
 
   const [groupName, setGroupName] = useState("");
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
-  const { groupChats, setGroupChats } = useGroupChatStore();
+  const { groupChats, setGroupChats, setCurrentGroupChat } =
+    useGroupChatStore();
+  const { activeTab, setActiveTab } = useActiveTabStore();
 
   useEffect(() => {
+    if (activeTab !== "Groups") return;
     const fetchData = async () => {
       try {
         setIsLoading(true);
@@ -56,11 +62,9 @@ export function UserRooms() {
         setIsLoading(false);
       }
     };
-    const debounce = setTimeout(() => {
-      fetchData();
-    }, 300);
+    const debounce = setTimeout(fetchData, 300);
     return () => clearTimeout(debounce);
-  }, [searchTerm]);
+  }, [searchTerm, activeTab]);
 
   const errorMessage =
     !isLoading && hasSearched && users.length === 0 && searchTerm.length > 0;
@@ -92,6 +96,7 @@ export function UserRooms() {
   };
 
   useEffect(() => {
+    if (activeTab !== "Groups") return;
     const fetchData = async () => {
       try {
         const chats = await fetchGroupChats();
@@ -101,7 +106,12 @@ export function UserRooms() {
       }
     };
     fetchData();
-  }, [groupChats.length]);
+  }, [activeTab]);
+
+  const handleStartChat = (chatId: string) => {
+    setCurrentGroupChat(chatId);
+    if (window.innerWidth < 1024) setActiveTab("");
+  };
 
   let content;
   if (!groupChats) {
@@ -115,54 +125,59 @@ export function UserRooms() {
       <ul>
         {groupChats.map((chat) => {
           return (
-            <FadeUp
-              key={chat.id}
-              className="flex items-center justify-between rounded bg-muted-foreground/50 p-2"
-            >
-              <div className="flex items-center gap-4">
-                <div className="size-8 overflow-hidden rounded-full bg-secondary/50 p-[2px] text-xs">
-                  <img
-                    src={chat.groupAdmin?.image || "/user.png"}
-                    alt={chat.chatName.slice(0, 2)}
-                    className="flex size-full items-center justify-center rounded-full object-cover text-primary"
-                  />
+            <FadeUp key={chat.id}>
+              <Card
+                onClick={() => handleStartChat(chat.id)}
+                className="flex cursor-pointer items-center justify-between rounded p-2 hover:bg-muted"
+              >
+                <div className="flex items-center gap-2">
+                  <div className="size-8 overflow-hidden rounded-full bg-gradient-to-br from-primary via-input to-indigo-500 p-[2px] text-xs">
+                    <img
+                      src={chat.groupAdmin?.image || "/user.png"}
+                      alt={chat.chatName.slice(0, 2)}
+                      className="flex size-full items-center justify-center rounded-full object-cover text-primary"
+                    />
+                  </div>
+                  <p className="text-sm font-semibold text-muted-foreground">
+                    {chat.chatName}
+                  </p>
                 </div>
-                <p className="font-semibold text-secondary/80">
-                  {chat.chatName}
-                </p>
-              </div>
-
-              <DropdownMenu>
-                <DropdownMenuTrigger>
-                  <Button
-                    asChild
-                    className="size-8 p-1 text-xs hover:bg-muted-foreground hover:text-secondary"
-                    variant={"ghost"}
-                    size={"sm"}
+                <DropdownMenu>
+                  <DropdownMenuTrigger>
+                    <Button
+                      asChild
+                      className="size-6 p-1 text-xs"
+                      variant={"outline"}
+                      size={"sm"}
+                    >
+                      <EllipsisVertical />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent
+                    align="end"
+                    alignOffset={10}
+                    sideOffset={-9}
+                    className={cn(
+                      "z-[150] space-y-2 rounded-lg pb-4",
+                      "data-[side=bottom]:rounded-tr-none data-[side=top]:rounded-br-none",
+                    )}
+                    onClick={(e) => e.stopPropagation()}
                   >
-                    <PlusSquare />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent
-                  align="end"
-                  alignOffset={6}
-                  sideOffset={-4}
-                  className="z-[150] space-y-2 rounded-lg rounded-tr-none pb-4"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem className="focus:bg-muted-foreground/50">
-                    View group
-                  </DropdownMenuItem>
-                  <DropdownMenuItem className="focus:bg-muted-foreground/50">
-                    Add more users
-                  </DropdownMenuItem>
-                  <DropdownMenuItem className="focus:bg-muted-foreground/50">
-                    Delete group
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem className="text-xs font-medium">
+                      View chat
+                    </DropdownMenuItem>
+                    <DropdownMenuItem className="text-xs font-medium">
+                      Edit chat
+                    </DropdownMenuItem>
+
+                    <DropdownMenuItem className="text-xs font-medium">
+                      Delete chat
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </Card>
             </FadeUp>
           );
         })}
@@ -170,31 +185,31 @@ export function UserRooms() {
     );
 
   return (
-    <TabsContent value="Rooms">
-      <header className="flex h-16 items-center justify-between gap-4 border-b border-muted-foreground px-4">
-        <h2 className="font-medium text-muted">My Rooms</h2>
-        <span className="flex size-5 items-center justify-center rounded border border-muted-foreground p-2 text-xs text-muted">
+    <TabsContent value="Groups">
+      <header className="flex h-16 items-center justify-between gap-4 border-b px-4 dark:border-muted-foreground">
+        <h2 className="font-medium">My Groups</h2>
+        <span className="flex size-5 items-center justify-center rounded border p-2 text-xs dark:border-muted-foreground">
           {groupChats?.length}
         </span>
       </header>
 
-      <section className="px-4">
+      <section>
         <Dialog>
-          <DialogTrigger className="w-full border-b border-muted-foreground pb-4">
+          <DialogTrigger className="w-full border-b pb-4 dark:border-muted-foreground">
             <Button
               asChild
-              variant="ghost"
-              className="mx-auto max-w-52 gap-2 hover:border-primary hover:bg-secondary hover:text-primary"
+              variant="outline"
+              className="mx-auto max-w-52 gap-2 hover:border-primary"
             >
-              <div className="mt-4 border border-muted-foreground shadow">
+              <div className="mt-4 border shadow">
                 <span>Create Group</span>
                 <Plus className="size-5" />
               </div>
             </Button>
           </DialogTrigger>
-          <DialogContent className="flex h-[calc(100%-4rem)] flex-col bg-primary text-secondary">
+          <DialogContent className="flex h-[calc(100%-4rem)] flex-col text-primary">
             <DialogHeader>
-              <DialogTitle className="border-b border-muted-foreground pb-4">
+              <DialogTitle className="border-b pb-4">
                 Creat Group Chat
               </DialogTitle>
             </DialogHeader>
@@ -213,8 +228,9 @@ export function UserRooms() {
                   <Input
                     id="group-name"
                     value={groupName}
+                    placeholder="Enter Group Name"
                     onChange={(e) => setGroupName(e.target.value)}
-                    className="w-full rounded-none border-none bg-muted/80 text-primary placeholder:text-xs placeholder:text-primary"
+                    className="w-full rounded-none text-primary placeholder:text-xs dark:bg-muted-foreground dark:text-secondary dark:placeholder:text-muted"
                   />
                 </fieldset>
                 <fieldset className="space-y-2 text-xs">
@@ -222,7 +238,7 @@ export function UserRooms() {
                     htmlFor="search-group-users"
                     className="font-semibold text-muted-foreground"
                   >
-                    Add Group Users
+                    Select Group Members
                   </Label>
                   {/* Search Box */}
                   <div className="relative">
@@ -232,16 +248,15 @@ export function UserRooms() {
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
                       placeholder="Search members..."
-                      className="w-full rounded-none border-none bg-muted/80 text-primary placeholder:text-xs placeholder:text-primary"
+                      className="w-full rounded-none text-primary placeholder:text-xs dark:bg-muted-foreground dark:text-secondary dark:placeholder:text-muted"
                     />
-                    {searchTerm ? (
-                      <X
-                        className="absolute right-3 top-1/2 size-4 -translate-y-1/2 cursor-pointer text-primary"
-                        onClick={() => setSearchTerm("")}
-                      />
-                    ) : (
-                      <Search className="absolute right-3 top-1/2 size-4 -translate-y-1/2 text-primary" />
-                    )}
+                    <div className="absolute right-2 top-1/2 inline-flex size-7 -translate-y-1/2 cursor-pointer items-center justify-center text-clip bg-secondary p-1 text-primary dark:bg-muted-foreground">
+                      {searchTerm ? (
+                        <X onClick={() => setSearchTerm("")} />
+                      ) : (
+                        <Search />
+                      )}
+                    </div>
                   </div>
                   <SearchResult
                     errorMessage={errorMessage}
@@ -309,7 +324,7 @@ function SearchResult({
   };
 
   return (
-    <section className="border-t border-muted-foreground px-1 py-4">
+    <section className="border-t px-1 py-4">
       <p className="text-center text-sm font-medium text-muted-foreground">
         {results.length ? "Search results" : null}
       </p>
@@ -329,14 +344,14 @@ function SearchResult({
                   className="flex cursor-pointer items-center justify-between p-2"
                 >
                   <div className="flex items-center gap-4">
-                    <div className="size-8 overflow-hidden rounded-full bg-secondary/50 p-[2px] text-xs">
+                    <div className="size-8 overflow-hidden rounded-full bg-primary/50 p-[2px] text-xs">
                       <img
                         src={user.image || "/user.png"}
                         alt={user.name.slice(0, 2)}
                         className="flex size-full items-center justify-center rounded-full object-cover text-primary"
                       />
                     </div>
-                    <p className="text-sm font-semibold text-secondary">
+                    <p className="text-sm font-semibold text-primary">
                       {user.name}
                     </p>
                   </div>

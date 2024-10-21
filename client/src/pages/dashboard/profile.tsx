@@ -19,17 +19,19 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useCurrentChatStore } from "./stores/chat";
 import { toast } from "sonner";
+import { useSocketStore } from "@/lib/store";
 
 export function ProfilePanel() {
   const { isOpen, setIsOpen, userProfile, setUserProfile } =
     useProfilePanelStore();
-  const { currentChat, setCurrentChat } = useCurrentChatStore();
+  const { setCurrentChat } = useCurrentChatStore();
+  const { userStatus } = useSocketStore();
 
   let profileContent = null;
   if (!userProfile) {
     profileContent = (
       <div className="flex justify-center">
-        <p className="mt-16 font-semibold text-muted-foreground">
+        <p className="mt-16 font-medium text-muted-foreground dark:text-primary">
           Select a member to view profile
         </p>
       </div>
@@ -45,10 +47,12 @@ export function ProfilePanel() {
     : "J.D";
 
   const profileDate = formatDate(userProfile?.updatedAt) + " - (GMT)";
+  const profileStatus = userStatus[userProfile?.id || ""];
 
   const handleCloseDM = () => {
     setCurrentChat(null);
     setUserProfile(null);
+    // TODO: Call the close DM API
   };
 
   const handleBlockUser = () => {
@@ -67,7 +71,7 @@ export function ProfilePanel() {
             transition={{ duration: 0.2 }}
             onClick={() => setIsOpen(!isOpen)}
             className={cn([
-              "fixed inset-0 z-20 size-full overflow-hidden bg-muted-foreground/50 backdrop-blur-sm md:hidden",
+              "fixed inset-0 z-20 size-full overflow-hidden bg-primary/40 backdrop-blur-sm md:hidden",
             ])}
           />
         )}
@@ -77,18 +81,18 @@ export function ProfilePanel() {
       <AnimatePresence>
         <motion.section
           className={cn(
-            "fixed right-0 z-30 h-screen overflow-hidden",
-            "transition-all duration-500 ease-in-out md:relative",
-            "border-muted-foreground bg-primary",
+            "fixed right-0 z-30 h-screen overflow-hidden border-l bg-muted",
+            "transition-all duration-500 ease-in-out dark:border-muted-foreground md:relative",
             isOpen
               ? "min-w-[75vw] max-md:translate-x-0 md:w-80 md:min-w-80 xl:min-w-96"
               : "min-w-0 max-md:translate-x-full md:w-0 md:min-w-0",
           )}
         >
-          <header className="flex h-16 items-center justify-between gap-4 border-b border-muted-foreground px-4">
-            <h2 className="font-medium text-muted">Profile</h2>
+          <header className="flex h-16 items-center justify-between gap-4 border-b px-4 dark:border-muted-foreground">
+            <h2 className="font-medium">Profile</h2>
             <Button
               size="icon"
+              variant="ghost"
               onClick={() => setIsOpen(!isOpen)}
               className="p-0 hover:text-muted lg:text-muted-foreground"
             >
@@ -99,24 +103,25 @@ export function ProfilePanel() {
             profileContent
           ) : (
             <div className="flex flex-col px-4 py-8 sm:px-8">
-              <div className="flex size-52 items-center justify-center self-center overflow-hidden rounded-full bg-gradient-to-br from-muted-foreground via-muted to-indigo-400 shadow-lg">
+              <div className="flex size-52 items-center justify-center self-center overflow-hidden rounded-full bg-gradient-to-br from-primary via-input to-indigo-500 p-1 shadow-lg">
                 <img
                   src={userProfile?.image || "/user.png"}
                   alt={profileNameInitials}
-                  className="aspect-square rounded-full object-cover p-1"
+                  className="aspect-square size-full rounded-full object-cover"
                 />
               </div>
               {/* User Info */}
-              <div className="mt-8">
-                <p className="text-sm text-muted-foreground">online</p>
-                <h3 className="text-sm font-semibold text-muted lg:text-base">
+              <div className="mt-8 space-y-1.5">
+                <h3 className="text-sm font-medium text-primary lg:text-base">
                   {profileName}
                 </h3>
-                <div className="mt-4 flex items-center gap-2">
-                  <Clock className="size-4 text-muted-foreground" />
-                  <span className="text-xs text-muted-foreground">
-                    {profileDate || "6:00 AM - 2:00 PM (GMT)"}
-                  </span>
+                <p className="text-xs text-muted-foreground">
+                  {profileStatus ?? "Disconnected"}
+                </p>
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <span className="font-medium">Last seen</span>
+                  <Clock className="size-4" />
+                  <span>{profileDate || "6:00 AM - 2:00 PM (GMT)"}</span>
                 </div>
               </div>
               {/* User Actions */}
@@ -124,14 +129,14 @@ export function ProfilePanel() {
                 <Button
                   size="sm"
                   variant="outline"
-                  className="flex-1 gap-2 bg-primary text-xs text-secondary"
+                  className="flex-1 gap-2 text-xs text-primary dark:border-muted-foreground dark:hover:border-none dark:hover:bg-muted-foreground dark:hover:text-muted"
                 >
                   <Phone className="size-4" /> Voice Call
                 </Button>
                 <Button
                   size="sm"
                   variant="outline"
-                  className="flex-1 gap-2 bg-primary text-xs text-secondary"
+                  className="flex-1 gap-2 text-xs text-primary dark:border-muted-foreground dark:hover:border-none dark:hover:bg-muted-foreground dark:hover:text-muted"
                 >
                   <Video className="size-4" /> Huddle
                 </Button>
@@ -140,35 +145,36 @@ export function ProfilePanel() {
                     <Button
                       size="sm"
                       variant="outline"
-                      className="ml-auto size-9 rounded border-muted-foreground bg-primary p-0 text-xs text-muted-foreground hover:border-secondary hover:bg-primary hover:text-secondary"
+                      className="ml-auto size-9 rounded p-0 text-xs text-muted-foreground dark:border-muted-foreground"
                     >
                       <EllipsisVertical />
                     </Button>
                   </DropdownMenuTrigger>
-                  {currentChat?.id === userProfile?.id && (
-                    <DropdownMenuContent
-                      align="end"
-                      alignOffset={6}
-                      className="z-[150] space-y-2 rounded-lg rounded-tr-none pb-4"
-                      onClick={(e) => e.stopPropagation()}
+                  <DropdownMenuContent
+                    align="end"
+                    alignOffset={0}
+                    sideOffset={0}
+                    className={cn(
+                      "z-[150] space-y-2 rounded-lg pb-4",
+                      "data-[side=bottom]:rounded-tr-none data-[side=top]:rounded-br-none",
+                    )}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      onClick={() => handleCloseDM()}
+                      className="text-xs font-medium"
                     >
-                      <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                      <DropdownMenuSeparator />
-
-                      <DropdownMenuItem
-                        onClick={() => handleCloseDM()}
-                        className="focus:bg-muted-foreground/50"
-                      >
-                        Close DM
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={handleBlockUser}
-                        className="focus:bg-muted-foreground/50"
-                      >
-                        Block user
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  )}
+                      Close DM
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={handleBlockUser}
+                      className="bg-destructive text-xs text-destructive-foreground lg:text-sm"
+                    >
+                      Block user
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
                 </DropdownMenu>
               </div>
             </div>

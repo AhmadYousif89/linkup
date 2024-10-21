@@ -1,6 +1,6 @@
 import { toast } from "sonner";
 import { useEffect, useState } from "react";
-import { CheckSquare, Loader, PlusSquare, Search, X } from "lucide-react";
+import { CheckSquare, Loader, Ellipsis, Search, X } from "lucide-react";
 
 import { User } from "@/lib/types";
 import { Button } from "@/components/ui/button";
@@ -16,15 +16,16 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import FadeUp from "@/components/fade_up";
 import {
-  Friend,
   useActiveTabStore,
   useFriendRequestStore,
 } from "../stores/side-panels";
 import { useCurrentChatStore } from "../stores/chat";
 import { useProfilePanelStore } from "../stores/side-panels";
 import { createUserDM, getAllUsers } from "@/lib/actions";
+import { Card } from "@/components/ui/card";
+import FadeUp from "@/components/fade_up";
+import { cn } from "@/lib/utils";
 
 export function AddFriend() {
   const [users, setUsers] = useState<User[]>([]);
@@ -40,7 +41,6 @@ export function AddFriend() {
         setHasSearched(false);
         if (searchTerm) {
           const users = await getAllUsers(searchTerm.trim());
-          console.log("users", users[2].clerkId);
           setUsers(users);
           setHasSearched(true);
         } else {
@@ -53,24 +53,21 @@ export function AddFriend() {
       }
     };
 
-    const debounce = setTimeout(() => {
-      fetchData();
-    }, 300);
-
+    const debounce = setTimeout(fetchData, 300);
     return () => clearTimeout(debounce);
   }, [searchTerm]);
 
   const intialMessage = !searchTerm && !isLoading && !friendRequests.length;
-  const errorMessage =
+  const isError =
     !isLoading && hasSearched && users.length === 0 && searchTerm.length > 0;
 
   return (
     <TabsContent value="Connect">
-      <header className="flex h-16 items-center justify-between gap-4 border-b border-muted-foreground px-4">
-        <h2 className="font-medium text-muted">Connect with members</h2>
+      <header className="flex h-16 items-center justify-between gap-4 border-b px-4 dark:border-muted-foreground">
+        <h2 className="font-medium">Connect with members</h2>
       </header>
       {/* Search Box */}
-      <div className="relative px-1 py-4">
+      <div className="relative px-2 py-4">
         <Label htmlFor="search">
           <Input
             id="search"
@@ -78,21 +75,16 @@ export function AddFriend() {
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="Search members..."
-            className="w-full rounded-none border-none bg-muted/80 text-primary placeholder:text-xs placeholder:text-primary"
+            className="w-full rounded-none text-primary placeholder:text-xs dark:bg-muted-foreground dark:text-secondary dark:placeholder:text-muted"
           />
-          {searchTerm ? (
-            <X
-              className="absolute right-3 top-1/2 size-4 -translate-y-1/2 cursor-pointer text-primary"
-              onClick={() => setSearchTerm("")}
-            />
-          ) : (
-            <Search className="absolute right-3 top-1/2 size-4 -translate-y-1/2 text-primary" />
-          )}
+          <div className="absolute right-4 top-1/2 inline-flex size-7 -translate-y-1/2 cursor-pointer items-center justify-center text-clip bg-secondary p-1 text-primary dark:bg-muted-foreground">
+            {searchTerm ? <X onClick={() => setSearchTerm("")} /> : <Search />}
+          </div>
         </Label>
       </div>
 
       <SearchResult
-        errorMessage={errorMessage}
+        isError={isError}
         isLoading={isLoading}
         intialMessage={intialMessage}
         results={users}
@@ -104,22 +96,22 @@ export function AddFriend() {
 function SearchResult({
   isLoading,
   intialMessage,
-  errorMessage,
+  isError,
   results,
 }: {
   isLoading: boolean;
   intialMessage: boolean;
-  errorMessage: boolean;
+  isError: boolean;
   results: User[];
 }) {
-  const { setActiveTab } = useActiveTabStore();
+  const setActiveTab = useActiveTabStore.getState().setActiveTab;
   const { setCurrentChat } = useCurrentChatStore();
   const { setUserProfile, setIsOpen } = useProfilePanelStore();
   const { friendRequests, setFriendRequests } = useFriendRequestStore();
 
   if (intialMessage) {
     return (
-      <p className="mt-8 text-center text-sm font-bold text-muted-foreground">
+      <p className="mt-8 text-center text-sm font-medium text-muted-foreground">
         Start connecting with your friends
       </p>
     );
@@ -133,9 +125,9 @@ function SearchResult({
     );
   }
 
-  if (errorMessage) {
+  if (isError) {
     return (
-      <p className="mt-8 text-center font-bold text-muted-foreground">
+      <p className="mt-8 text-center text-sm font-medium text-muted-foreground">
         No results found
       </p>
     );
@@ -161,7 +153,7 @@ function SearchResult({
     toast.success(`You now have a DM with ${user.name}`);
   };
 
-  const handleSendFriendRequest = async (friend: Friend) => {
+  const handleSendFriendRequest = async (friend: User) => {
     try {
       toast.success(`Friend request sent to ${friend.name}`);
       setFriendRequests(friend);
@@ -171,12 +163,11 @@ function SearchResult({
     }
   };
 
-  const renderRecentConnections =
-    !results.length && !isLoading && !errorMessage;
+  const renderRecentConnections = !results.length && !isLoading && !isError;
   let content = renderRecentConnections ? friendRequests : results;
 
   return (
-    <section className="border-t border-muted-foreground px-1 py-4">
+    <section className="border-t px-1 py-4 dark:border-muted-foreground">
       <p className="text-center text-sm font-medium text-muted-foreground">
         {results.length
           ? "Search results"
@@ -185,7 +176,7 @@ function SearchResult({
             : null}
       </p>
       <ScrollArea
-        thumbClassName="bg-muted-foreground"
+        thumbClassName="bg-indigo-400"
         className="h-[30rem] lg:h-[45rem]"
       >
         <ul className="mt-4 space-y-4">
@@ -194,75 +185,75 @@ function SearchResult({
               (friend) => friend.id === user.id,
             );
             return (
-              <FadeUp
-                key={user.id}
-                className="flex items-center justify-between rounded bg-muted-foreground/50 p-3"
-              >
-                <div className="flex items-center gap-4">
-                  <div className="size-10 overflow-hidden rounded-full bg-secondary/50 p-[2px] text-xs">
-                    <img
-                      src={user.image || "/user.png"}
-                      alt={user.name.slice(0, 2)}
-                      className="flex size-full items-center justify-center rounded-full object-cover text-primary"
-                    />
+              <FadeUp key={user.id}>
+                <Card className="flex items-center justify-between rounded p-2 dark:border dark:border-muted-foreground dark:bg-card/50">
+                  <div className="flex items-center gap-2">
+                    <div className="size-8 overflow-hidden rounded-full bg-gradient-to-br from-primary via-input to-indigo-500 p-[2px] text-xs">
+                      <img
+                        src={user.image || "/user.png"}
+                        alt={user.name.slice(0, 2)}
+                        className="grid size-full place-items-center rounded-full object-cover"
+                      />
+                    </div>
+                    <div className="text-xs font-medium">
+                      <p>{user.name}</p>
+                      <p className="line-clamp-1 max-w-36 overflow-hidden text-muted-foreground">
+                        {user.email}
+                      </p>
+                    </div>
                   </div>
-                  <div className="space-y-1">
-                    <p className="text-sm font-semibold text-secondary">
-                      {user.name}
-                    </p>
-                    <p className="line-clamp-1 max-w-36 overflow-hidden text-xs text-muted">
-                      {user.email}
-                    </p>
-                  </div>
-                </div>
-                <DropdownMenu>
-                  <DropdownMenuTrigger>
-                    <Button
-                      asChild
-                      className="size-8 p-1 text-xs hover:bg-muted-foreground hover:text-secondary"
-                      variant={"ghost"}
-                      size={"sm"}
-                    >
-                      <PlusSquare />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent
-                    align="end"
-                    alignOffset={6}
-                    sideOffset={-4}
-                    className="z-[150] space-y-2 rounded-lg rounded-tr-none pb-4"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem
-                      disabled={friendRequestSent}
-                      onClick={() => handleSendFriendRequest(user as Friend)}
-                      className="focus:bg-muted-foreground/50"
-                    >
-                      {friendRequestSent ? (
-                        <span className="flex items-center gap-2">
-                          Request sent{" "}
-                          <CheckSquare className="size-5 text-green-300" />
-                        </span>
-                      ) : (
-                        "Send friend request"
+                  <DropdownMenu>
+                    <DropdownMenuTrigger>
+                      <Button
+                        asChild
+                        size="icon"
+                        variant="outline"
+                        className="size-6 p-1 hover:bg-muted"
+                      >
+                        <Ellipsis />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent
+                      align="end"
+                      alignOffset={10}
+                      sideOffset={-9}
+                      className={cn(
+                        "z-[150] space-y-2 rounded-lg pb-4",
+                        "data-[side=bottom]:rounded-tr-none data-[side=top]:rounded-br-none",
                       )}
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => handleViewProfile(user)}
-                      className="focus:bg-muted-foreground/50"
+                      onClick={(e) => e.stopPropagation()}
                     >
-                      View profile
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => handleCreateDM(user)}
-                      className="focus:bg-muted-foreground/50"
-                    >
-                      Create DM
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                      <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        disabled={friendRequestSent}
+                        onClick={() => handleSendFriendRequest(user)}
+                        className="text-xs font-medium"
+                      >
+                        {friendRequestSent ? (
+                          <span className="flex items-center gap-2">
+                            Request sent{" "}
+                            <CheckSquare className="size-5 text-green-500 dark:text-green-300" />
+                          </span>
+                        ) : (
+                          "Send friend request"
+                        )}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => handleViewProfile(user)}
+                        className="text-xs font-medium"
+                      >
+                        View profile
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => handleCreateDM(user)}
+                        className="text-xs font-medium"
+                      >
+                        Create DM
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </Card>
               </FadeUp>
             );
           })}
