@@ -13,7 +13,7 @@ export type Sender = {
   name: string;
   email: string;
   image: string;
-} | null;
+};
 
 export type LatestMessage = {
   id: string;

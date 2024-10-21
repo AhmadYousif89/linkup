@@ -1,3 +1,4 @@
+import { toast } from "sonner";
 import { formatApiData } from "./utils";
 
 export const SERVER_API_URL = import.meta.env.VITE_SERVER_API;
@@ -11,9 +12,7 @@ export type ClerkUser = {
 export const postUser = async (user: ClerkUser) => {
   const res = await fetch(`${SERVER_API_URL}/user/clerk`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ ...user, fullName: user.fullName ?? "N/A" }),
   });
   const data = await res.json();
@@ -32,9 +31,10 @@ export const getAllUsers = async (searchTerm: string) => {
       Authorization: `Bearer ${token}`,
     },
   });
-  const users = await res.json();
-  const data = formatApiData(users, "USER", "Array");
-  return data;
+
+  const data = await res.json();
+  const users = formatApiData(data, "USER", "Array");
+  return users;
 };
 
 export const createUserDM = async (userId: string) => {
@@ -48,6 +48,7 @@ export const createUserDM = async (userId: string) => {
       Authorization: `Bearer ${token}`,
     },
   });
+
   const data = await res.json();
   const chat = formatApiData(data, "CHAT", "Object");
   return chat;
@@ -66,6 +67,7 @@ export const getMessagesFromDB = async (chatId: string) => {
       Authorization: `Bearer ${token}`,
     },
   });
+
   const data = await res.json();
   const messages = formatApiData(data, "MESSAGE", "Array");
   return messages;
@@ -82,17 +84,29 @@ export const sendMessage = async (content: string, chatId: string) => {
     },
     body: JSON.stringify({ content, chatId }),
   });
+
   const data = await res.json();
-  console.log("message received from api", data);
   const message = formatApiData(data, "MESSAGE", "Object");
-  console.log("formatted message", message);
   return message;
 };
 
-export const createGroupChat = async (body: {
-  name: string;
-  users: string[];
-}) => {
+export const getUserDMs = async () => {
+  const tokenItem = localStorage.getItem("token");
+  const token = tokenItem ? JSON.parse(tokenItem) : null;
+  const res = await fetch(`${SERVER_API_URL}/chat`, {
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  const data = await res.json();
+  const chats = formatApiData(data, "CHAT", "Array");
+  return chats;
+};
+
+type GroupChatBody = { name: string; users: string[] };
+export const createGroupChat = async (body: GroupChatBody) => {
   const tokenItem = localStorage.getItem("token");
   const token = tokenItem ? JSON.parse(tokenItem) : null;
   console.log("creating group chat", body);
@@ -106,9 +120,7 @@ export const createGroupChat = async (body: {
   });
 
   const data = await response.json();
-  console.log("fetched group chat", data);
   const groupChat = formatApiData(data, "GROUP_CHAT", "Object");
-  console.log("group Chat", groupChat);
   return groupChat;
 };
 
@@ -121,7 +133,28 @@ export const fetchGroupChats = async () => {
       Authorization: `Bearer ${token}`,
     },
   });
+
   const data = await res.json();
   const chats = formatApiData(data, "GROUP_CHAT", "Array");
   return chats;
+};
+
+export const closeChat = async (chatId: string) => {
+  const tokenItem = localStorage.getItem("token");
+  const token = tokenItem ? JSON.parse(tokenItem) : null;
+  console.log("closing chat", chatId);
+  const res = await fetch(`${SERVER_API_URL}/chat/close`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ chatId }),
+  });
+  const data = await res.json();
+  if (res.status === 200) {
+    toast.success(data.message);
+  } else {
+    console.error("Error closing chat:", data.message);
+  }
 };

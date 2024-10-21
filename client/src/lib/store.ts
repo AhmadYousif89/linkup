@@ -8,7 +8,7 @@ const SOCKET_SERVER_URL =
     ? import.meta.env.VITE_SOCKET_SERVER_API
     : `http://localhost:${SOCKET_PORT}`;
 
-export const SocketEvents = {
+const SocketEvents = {
   Connect: {
     Init: "connect",
     Connected: "connected",
@@ -97,6 +97,7 @@ export const useSocketStore = create<SocketState>()((set, get) => ({
 
     socket.on(SocketEvents.Connect.Connected, (data: string) => {
       console.log("Socket Connected:", data);
+      socket.emit(SocketEvents.User.Status, { userId, status: "online" });
     });
 
     socket.on(SocketEvents.Connect.Error, (error) => {
@@ -124,12 +125,13 @@ export const useSocketStore = create<SocketState>()((set, get) => ({
     });
 
     socket.on(SocketEvents.User.Status, (data: UserStatus) => {
-      set((state) => ({
-        userStatus: {
-          ...state.userStatus,
-          [data.userId]: data.status,
-        },
-      }));
+      if (data && data.userId)
+        set((state) => ({
+          userStatus: {
+            ...state.userStatus,
+            [data.userId as string]: data.status.toLowerCase() as Status,
+          },
+        }));
     });
 
     // Connect socket and store it in state

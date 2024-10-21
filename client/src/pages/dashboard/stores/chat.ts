@@ -9,7 +9,7 @@ type CurrentChatState = {
   setCurrentChat: (data: Chat | null) => void;
 };
 
-export const useCurrentChatStore = create<CurrentChatState>()((set) => ({
+export const useCurrentChatStore = create<CurrentChatState>((set) => ({
   currentChat: null,
   currentChatUser: null,
   setCurrentChat: (data) =>
@@ -27,32 +27,23 @@ export const useCurrentChatStore = create<CurrentChatState>()((set) => ({
     }),
 }));
 
-type UserDMsState = {
-  userDMs: User[];
-  setUserDMs: (users: User[]) => void;
-};
-
-export const useUserDMsStore = create<UserDMsState>((set) => ({
-  userDMs: [],
-  setUserDMs: (users) =>
-    set((state) => {
-      const updatedUserDMs = state.userDMs.map(
-        (user) => users.find((u) => u.id === user.id) || user,
-      );
-
-      const newUsers = users.filter(
-        (user) => !state.userDMs.some((u) => u.id === user.id),
-      );
-      return { userDMs: [...updatedUserDMs, ...newUsers] };
-    }),
-}));
-
 type GroupChatState = {
   groupChats: GroupChat[];
   setGroupChats: (data: GroupChat[]) => void;
+  currentGroupChat: GroupChat | null;
+  setCurrentGroupChat: (chatId: string) => void;
 };
 
 export const useGroupChatStore = create<GroupChatState>((set) => ({
   groupChats: [],
   setGroupChats: (data) => set(() => ({ groupChats: data })),
+
+  currentGroupChat: null,
+  setCurrentGroupChat: (chatId) =>
+    set((state) => {
+      return {
+        currentGroupChat:
+          state.groupChats.find((chat) => chat.id === chatId) || null,
+      };
+    }),
 }));

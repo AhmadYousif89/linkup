@@ -91,7 +91,7 @@ function formatLatestMessage(
   return {
     id: latestMessage._id,
     content: latestMessage.content,
-    sender: latestMessage.sender ? formatSender(latestMessage.sender) : null,
+    sender: formatSender(latestMessage.sender),
     chatId: latestMessage.chat,
     readBy: latestMessage.readBy,
     createdAt: latestMessage.createdAt,

@@ -1,7 +1,7 @@
 import { User } from "@/lib/types";
 import { create } from "zustand";
 
-export type Tab = "Connect" | "Messages" | "Rooms" | "Requests" | "More" | "";
+export type Tab = "Connect" | "Messages" | "Groups" | "Requests" | "More" | "";
 type ActiveTabState = {
   activeTab: Tab;
   setActiveTab: (activeTab: Tab) => void;
@@ -12,10 +12,9 @@ export const useActiveTabStore = create<ActiveTabState>((set) => ({
   setActiveTab: (activeTab) => set({ activeTab }),
 }));
 
-export type Friend = User & { sent: boolean };
 type UserFriendRequestState = {
-  friendRequests: Friend[];
-  setFriendRequests: (friendData: Friend) => void;
+  friendRequests: User[];
+  setFriendRequests: (friendData: User) => void;
 };
 
 export const useFriendRequestStore = create<UserFriendRequestState>((set) => ({
