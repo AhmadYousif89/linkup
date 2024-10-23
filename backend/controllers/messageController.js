@@ -50,9 +50,9 @@ class MessageController {
         content: content || '',
         chat: chatId,
       };
-
+      console.log('newMessage', newMessage);
       // If files were uploaded, handle file saving
-      let files;
+      let files = [];
       if (req.files && req.files.length > 0) {
         files = await Promise.all(
           req.files.map(async (file) => {
@@ -80,7 +80,7 @@ class MessageController {
           path: 'chat.users',
           select: 'name pic',
         });
-
+        console.log('message', message);
         await Chat.findByIdAndUpdate(chatId, { latestMessage: message });
         return res.status(201).json(message);
       } catch (error) {
