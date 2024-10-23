@@ -1,9 +1,17 @@
 import { twMerge } from "tailwind-merge";
 import { clsx, type ClassValue } from "clsx";
+import emojiRegex from "emoji-regex";
 import { Chat, GroupChat, LatestMessage, Message, Sender, User } from "./types";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
+}
+
+export function isOnlyEmojis(text: string) {
+  // Remove all emoji characters
+  const withoutEmoji = text.replace(emojiRegex(), "").trim();
+  // If nothing is left (except whitespace), it was only emojis
+  return withoutEmoji.length === 0;
 }
 
 export function formatDate(
@@ -105,6 +113,7 @@ function formatMessage(message: any): Message {
     content: message.content,
     sender: formatSender(message.sender),
     chat: formatChat(message.chat),
+    files: message.files || [],
     readBy: message.readBy,
     createdAt: message.createdAt,
     updatedAt: message.updatedAt,
@@ -140,4 +149,58 @@ function formatGroupChat(groupChat: any): GroupChat | null {
     createdAt: groupChat.createdAt,
     updatedAt: groupChat.updatedAt,
   };
+}
+
+type GenerateIdOptions = {
+  length?: number;
+  lowercase?: boolean;
+  uppercase?: boolean;
+  numbers?: boolean;
+  special?: boolean;
+  prefix?: string;
+};
+export function generateId({
+  length = 21,
+  lowercase = true,
+  uppercase = true,
+  numbers = true,
+  special = false,
+  prefix = "",
+}: GenerateIdOptions = {}) {
+  // Character sets
+  const lowercaseChars = "abcdefghijklmnopqrstuvwxyz";
+  const uppercaseChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  const specialChars = "!@#$%^&*()-_+=[]{}|;:,.<>?";
+  const numberChars = "0123456789";
+
+  // Build character pool based on options
+  let chars = "";
+  if (lowercase) chars += lowercaseChars;
+  if (uppercase) chars += uppercaseChars;
+  if (numbers) chars += numberChars;
+  if (special) chars += specialChars;
+
+  // Ensure at least one character set is selected
+  if (!chars) {
+    chars = lowercaseChars + numberChars;
+  }
+
+  // Generate random ID
+  let id = prefix;
+  for (let i = 0; i < length; i++) {
+    id += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+
+  return id;
+}
+
+export function dataURLtoBlob(dataUrl: string) {
+  const arr = dataUrl.split(",");
+  const mimeMatch = arr[0].match(/:(.*?);/);
+  const mime = mimeMatch ? mimeMatch[1] : "application/octet-stream";
+  const bstr = atob(arr[1]);
+  let n = bstr.length;
+  const u8arr = new Uint8Array(n);
+  while (n--) u8arr[n] = bstr.charCodeAt(n);
+  return new Blob([u8arr], { type: mime });
 }

@@ -47,7 +47,7 @@ export function SidePanel() {
       {/* SideBar */}
       <aside
         className={cn(
-          "relative z-50 flex min-w-16 flex-col border-r bg-secondary pb-5",
+          "relative z-[100] flex min-w-16 flex-col border-r bg-secondary pb-5",
           "dark:border-muted-foreground",
         )}
       >

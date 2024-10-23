@@ -1,6 +1,4 @@
 import { create } from "zustand";
-// import { persist } from "zustand/middleware";
-
 import { Chat, GroupChat, User } from "@/lib/types";
 
 type CurrentChatState = {

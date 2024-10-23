@@ -22,7 +22,6 @@ export function Chat() {
     .map((n: string) => n[0])
     .join("");
   const currentChatUserStatus = userStatus[currentChatUser?.id || ""];
-  console.log(currentChatUserStatus);
 
   return (
     <>

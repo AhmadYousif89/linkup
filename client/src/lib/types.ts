@@ -36,11 +36,21 @@ export type Chat = {
   latestMessage: LatestMessage;
 };
 
+type Files =
+  | {
+      originalName: string;
+      mimeType: string;
+      size: number;
+      url: string;
+    }[]
+  | [];
+
 export type Message = {
   id: string;
   content: string;
   sender: Sender;
   chat: Chat;
+  files: Files;
   readBy: string[];
   createdAt: string;
   updatedAt: string;

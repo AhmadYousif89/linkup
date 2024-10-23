@@ -73,16 +73,21 @@ export const getMessagesFromDB = async (chatId: string) => {
   return messages;
 };
 
-export const sendMessage = async (content: string, chatId: string) => {
+export const sendMessage = async (
+  content: string | FormData,
+  chatId: string,
+) => {
   const tokenItem = localStorage.getItem("token");
   const token = tokenItem ? JSON.parse(tokenItem) : null;
+  const isFormData = content instanceof FormData;
+
   const res = await fetch(`${SERVER_API_URL}/message`, {
     method: "POST",
     headers: {
-      "Content-Type": "application/json",
+      ...(isFormData ? {} : { "Content-Type": "application/json" }),
       Authorization: `Bearer ${token}`,
     },
-    body: JSON.stringify({ content, chatId }),
+    body: isFormData ? content : JSON.stringify({ content, chatId }),
   });
 
   const data = await res.json();
