@@ -7,12 +7,13 @@ import {
   SignedOut,
   UserButton,
 } from "@clerk/clerk-react";
+import { ThemeSwitcher } from "@/components/theme_switcher";
 
 export function MainHeader() {
   return (
     <header className="container border-b border-input">
       <div className="flex min-h-16 items-center justify-between px-4">
-        <div className="text-2xl font-bold text-white">
+        <div className="text-2xl font-bold">
           <Link to="/home">LinkUp</Link>
         </div>
         <SignedOut>
@@ -46,14 +47,7 @@ export function MainHeader() {
           <nav>
             <ul className="flex items-center gap-6">
               <li>
-                <Button size={"sm"} className="w-20 p-0 text-xs font-semibold">
-                  <Link
-                    to="/dashboard"
-                    className="flex size-full items-center justify-center"
-                  >
-                    Dashboard
-                  </Link>
-                </Button>
+                <ThemeSwitcher />
               </li>
               <li className="flex">
                 <UserButton />

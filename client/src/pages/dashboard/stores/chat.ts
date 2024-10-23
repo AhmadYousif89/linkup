@@ -1,27 +1,47 @@
-import { User } from "@/lib/types";
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
-
-type Message = { id: string; message: string; username: string };
+import { Chat, GroupChat, User } from "@/lib/types";
 
 type CurrentChatState = {
+  currentChat: Chat | null;
   currentChatUser: User | null;
-  setCurrentChatUser: (user: User | null) => void;
-  currentChatData: Message[];
-  setCurrentChatData: (data: Message[]) => void;
+  setCurrentChat: (data: Chat | null) => void;
 };
 
-export const useCurrentChatStore = create<CurrentChatState>()(
-  persist(
-    (set) => ({
-      currentChatUser: null,
-      setCurrentChatUser: (user) => set({ currentChatUser: user }),
-
-      currentChatData: [],
-      setCurrentChatData: (data) => set({ currentChatData: data }),
+export const useCurrentChatStore = create<CurrentChatState>((set) => ({
+  currentChat: null,
+  currentChatUser: null,
+  setCurrentChat: (data) =>
+    set(() => {
+      if (data) {
+        return {
+          currentChat: data,
+          currentChatUser: data.users[0],
+        };
+      }
+      return {
+        currentChat: data,
+        currentChatUser: null,
+      };
     }),
-    {
-      name: "current-chat",
-    },
-  ),
-);
+}));
+
+type GroupChatState = {
+  groupChats: GroupChat[];
+  setGroupChats: (data: GroupChat[]) => void;
+  currentGroupChat: GroupChat | null;
+  setCurrentGroupChat: (chatId: string) => void;
+};
+
+export const useGroupChatStore = create<GroupChatState>((set) => ({
+  groupChats: [],
+  setGroupChats: (data) => set(() => ({ groupChats: data })),
+
+  currentGroupChat: null,
+  setCurrentGroupChat: (chatId) =>
+    set((state) => {
+      return {
+        currentGroupChat:
+          state.groupChats.find((chat) => chat.id === chatId) || null,
+      };
+    }),
+}));

@@ -18,9 +18,7 @@ class ChatController {
 
     if (req.user._id.toString() === userId) {
       console.log('Cannot create chat with yourself');
-      return res
-        .status(400)
-        .json({ error: 'Cannot create chat with yourself' });
+      return res.status(400).json({ error: 'Cannot create chat with yourself' });
     }
     // Search for chats that has the userId
     let isChat = await Chat.find({
@@ -40,19 +38,18 @@ class ChatController {
 
     if (isChat.length > 0) {
       // Check if the dm is closedm if yes, open it
-      if (isChat[0].closedUsers.includes(req.user._id.toString())) {
+      if (isChat[0].closedUsers && isChat[0].closedUsers.includes(req.user._id.toString())) {
         await isChat[0].updateOne({
           $pull: { closedUsers: req.user._id.toString() },
         });
       }
-      isChat[0].closedUsers = isChat[0].closedUsers.filter(
-        (user) => user._id.toString() !== req.user._id.toString()
-      );
+
+      isChat[0].closedUsers =
+        isChat[0].closedUsers &&
+        isChat[0].closedUsers.filter((user) => user._id.toString() !== req.user._id.toString());
 
       // Remove the current user from the obj before sending it
-      isChat[0].users = isChat[0].users.filter(
-        (user) => user._id.toString() === userId
-      );
+      isChat[0].users = isChat[0].users.filter((user) => user._id.toString() === userId);
 
       // If there are chats, then send them
       return res.json(isChat[0]);
@@ -67,16 +64,11 @@ class ChatController {
 
     try {
       const createdChat = await Chat.create(chatData);
-      const fullChat = await Chat.findOne({ _id: createdChat._id }).populate(
-        'users',
-        '-password'
-      );
-      fullChat.users = fullChat.users.filter(
-        (user) => user._id.toString() === userId
-      );
+      const fullChat = await Chat.findOne({ _id: createdChat._id }).populate('users', '-password');
+      fullChat.users = fullChat.users.filter((user) => user._id.toString() === userId);
       return res.status(201).json(fullChat);
     } catch (error) {
-      console.log(error);
+      console.log('err', error);
       return res.status(400).json({ error: 'Cannot create Chat' });
     }
   });
@@ -99,7 +91,7 @@ class ChatController {
         .then(async (results) => {
           let data = results.map((chat) => {
             chat.users = chat.users.filter(
-              (user) => user._id.toString() !== req.user._id.toString()
+              (user) => user._id.toString() !== req.user._id.toString(),
             );
             return chat;
           });
@@ -154,7 +146,7 @@ class ChatController {
     }
 
     // Check if all users exist
-    let usersIds = JSON.parse(req.body.users);
+    let usersIds = req.body.users;
     // Add logged in user to users list
     usersIds.push(req.user._id.toString());
     // Remove any duplicates
@@ -162,14 +154,12 @@ class ChatController {
 
     if (usersIds.length < 3) {
       console.log('Please select at least 3 users for the group chat');
-      return res
-        .status(400)
-        .json({ error: 'Please select at least 3 users for the group chat' });
+      return res.status(400).json({ error: 'Please select at least 3 users for the group chat' });
     }
 
     try {
       const groupChat = await Chat.create({
-        chatName: req.body.name,
+        chatName: req.body.name || 'Unnamed Group',
         users: usersIds,
         isGroupChat: true,
         groupAdmin: req.user,
@@ -206,9 +196,7 @@ class ChatController {
     // Check if the chat is not a group
     if (!group.isGroupChat) {
       console.log('Cannot change name of DM');
-      return res
-        .status(400)
-        .json({ error: 'Cannot change name of private chat' });
+      return res.status(400).json({ error: 'Cannot change name of private chat' });
     }
 
     // Check if user in the group
@@ -221,22 +209,16 @@ class ChatController {
       chatName = 'Unnamed Group';
     }
 
-    const updatedChat = await Chat.findByIdAndUpdate(
-      chatId,
-      {
-        chatName,
-      },
-      { new: true }
-    )
+    const updatedChat = await Chat.findByIdAndUpdate(chatId, { chatName }, { new: true })
       .populate('users', '-password')
       .populate('groupAdmin', '-password');
 
     if (!updatedChat) {
       console.log('Chat not found');
       return res.status(400).json({ error: 'Chat not found' });
-    } else {
-      res.status(200).json(updatedChat);
     }
+
+    return res.status(200).json(updatedChat);
   });
 
   // Add to group
@@ -285,7 +267,7 @@ class ChatController {
       {
         $push: { users: userId },
       },
-      { new: true }
+      { new: true },
     )
       .populate('users', '-password')
       .populate('groupAdmin', '-password');
@@ -316,9 +298,7 @@ class ChatController {
     // Check if user is admin
     if (group.groupAdmin._id.toString() !== req.user._id.toString()) {
       console.log('Only the group admin can remove from group');
-      return res
-        .status(400)
-        .json({ error: 'Only the group admin can remove from group' });
+      return res.status(400).json({ error: 'Only the group admin can remove from group' });
     }
 
     const isUser = await User.findById(userId);
@@ -337,7 +317,7 @@ class ChatController {
       {
         $pull: { users: userId },
       },
-      { new: true }
+      { new: true },
     )
       .populate('users', '-password')
       .populate('groupAdmin', '-password');
@@ -373,9 +353,7 @@ class ChatController {
     // Check if user is admin
     if (group.groupAdmin._id.toString() !== req.user._id.toString()) {
       console.log('Only the group admin can delete the group');
-      return res
-        .status(400)
-        .json({ error: 'Only the group admin can delete the group' });
+      return res.status(400).json({ error: 'Only the group admin can delete the group' });
     }
 
     const deletedChat = await Chat.findByIdAndDelete(chatId);
@@ -413,12 +391,9 @@ class ChatController {
     }
 
     // Check if the user is groupAdmin and there are still users in chat
-    if (
-      group.groupAdmin._id.toString() === user._id.toString() &&
-      group.users.length > 1
-    ) {
+    if (group.groupAdmin._id.toString() === user._id.toString() && group.users.length > 1) {
       const firstMemberId = group.users.find(
-        (member) => member.toString() !== group.groupAdmin._id.toString()
+        (member) => member.toString() !== group.groupAdmin._id.toString(),
       );
       const firstMember = await User.findById(firstMemberId);
       await Chat.findByIdAndUpdate(
@@ -427,7 +402,7 @@ class ChatController {
           $set: { groupAdmin: firstMemberId },
           $pull: { users: user._id },
         },
-        { new: true }
+        { new: true },
       );
 
       return res.status(200).json({
@@ -441,12 +416,10 @@ class ChatController {
         {
           $pull: { users: user._id },
         },
-        { new: true }
+        { new: true },
       );
 
-      return res
-        .status(200)
-        .json({ message: `removed from ${group.chatName} successfully` });
+      return res.status(200).json({ message: `removed from ${group.chatName} successfully` });
     }
   });
 
@@ -462,19 +435,13 @@ class ChatController {
       if (!chat) {
         console.log('Chat not found');
         return res.status(400).json('Chat not found');
-      } else if (
-        !chat.users.find(
-          (user) => user._id.toString() === req.user._id.toString()
-        )
-      ) {
+      } else if (!chat.users.find((user) => user._id.toString() === req.user._id.toString())) {
         console.log('User not found in chat');
         return res.status(400).json('User not found in chat');
       }
       if (chat.isGroupChat) {
         console.log('Cannot close a group chat, want to quit instead ?');
-        return res
-          .status(400)
-          .json('Cannot close a group chat, want to quit instead ?');
+        return res.status(400).json('Cannot close a group chat, want to quit instead ?');
       }
       if (chat.closedUsers.includes(req.user._id)) {
         console.log('Chat already closed');
@@ -485,13 +452,7 @@ class ChatController {
       return res.status(400).json('Error: Chat not found');
     }
 
-    await Chat.findByIdAndUpdate(
-      chatId,
-      {
-        $push: { closedUsers: req.user._id },
-      },
-      { new: true }
-    );
+    await Chat.findByIdAndUpdate(chatId, { $push: { closedUsers: req.user._id } }, { new: true });
 
     return res.status(200).json({ message: 'Chat closed successfully' });
   });

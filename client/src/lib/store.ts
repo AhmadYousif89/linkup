@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { io } from "socket.io-client";
+import { Socket, io } from "socket.io-client";
 import { Message } from "./types";
 
 const SOCKET_PORT = 5000 || import.meta.env.VITE_SOCKET_SERVER_PORT;
@@ -8,78 +8,183 @@ const SOCKET_SERVER_URL =
     ? import.meta.env.VITE_SOCKET_SERVER_API
     : `http://localhost:${SOCKET_PORT}`;
 
-export const socket = io(SOCKET_SERVER_URL);
-export const SocketEvent = {
+const SocketEvents = {
   Connect: {
     Init: "connect",
     Connected: "connected",
-    Setup: "intial join",
+    Setup: "initial_join",
     Error: "connect_error",
+    Disconnect: "disconnect",
   },
-  Disconnect: "disconnect",
   Messages: {
-    New: "new",
-    Greet: "greet",
-    Recieved: "recieved",
+    New: "message:new",
+    Received: "message:received",
+  },
+  Notification: {
+    New: "notification:new",
+    Read: "notification:read",
+    Received: "notification:received",
   },
   User: {
-    IsTyping: "user typing",
-    IsNotTyping: "user not typing",
-    Join: "user join",
-    Leave: "user leave",
+    IsTyping: "user:typing",
+    IsNotTyping: "user:not_typing",
+    Join: "user:join",
+    Leave: "user:leave",
+    Status: "user:status",
   },
   Chat: {
-    Join: "join chat",
-    Leave: "leave chat",
+    Join: "chat:join",
+    Leave: "chat:leave",
   },
 } as const;
 
+type Status = "online" | "offline" | "away";
+type UserStatus = Record<string, Status>;
 type SocketState = {
+  socket: Socket | null;
   isConnected: boolean;
   messages: Message[];
+  notifications: Message[];
+  isTyping: boolean;
+  userStatus: UserStatus;
 
+  // Socket Connection Methods
+  initSocket: () => void;
+  disconnect: () => void;
+  cleanup: () => void;
+
+  // State Setters
+  setIsConnected: (isConnected: boolean) => void;
   setNewMessage: (message: Message) => void;
   setMessagesFromDB: (messages: Message[]) => void;
-  initSocket: () => void;
-  sendSocketMessage: (data: Message) => void;
-  disconnect: () => void;
+
+  // Socket Event Emitters
+  emitMessage: (message: Message) => void;
+  emitJoinChat: (chatId: string) => void;
+  emitLeaveChat: (chatId: string) => void;
+  emitTyping: (chatId: string, isTyping: boolean) => void;
 };
 
-export const useSocketStore = create<SocketState>((set) => ({
+export const useSocketStore = create<SocketState>()((set, get) => ({
+  socket: null,
   isConnected: false,
   messages: [],
+  notifications: [],
+  isTyping: false,
+  userStatus: {},
 
+  // Initialize socket connection
   initSocket: () => {
-    socket.on(SocketEvent.Connect.Error, (error: Error) => {
-      console.error("Connection failed:", error);
+    const userId = localStorage.getItem("userId");
+    if (!userId) {
+      console.error("No user ID found in localStorage");
+      return;
+    }
+
+    const socket = io(SOCKET_SERVER_URL, {
+      reconnection: true,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000,
+      timeout: 10000,
+      autoConnect: false,
     });
 
-    socket.on(SocketEvent.Connect.Init, () => {
+    // Set up socket event listeners
+    socket.on(SocketEvents.Connect.Init, () => {
       set({ isConnected: true });
+      socket.emit(SocketEvents.Connect.Setup, userId);
     });
 
-    socket.on(SocketEvent.Disconnect, () => {
+    socket.on(SocketEvents.Connect.Connected, (data: string) => {
+      console.log("Socket Connected:", data);
+      socket.emit(SocketEvents.User.Status, { userId, status: "online" });
+    });
+
+    socket.on(SocketEvents.Connect.Error, (error) => {
       set({ isConnected: false });
+      console.error("Socket error:", error);
     });
+
+    socket.on(SocketEvents.Connect.Disconnect, () => {
+      set({ isConnected: false });
+      console.log("Socket disconnected");
+    });
+
+    socket.on(SocketEvents.Messages.Received, (message: Message) => {
+      set((state) => ({
+        messages: [...state.messages, message],
+      }));
+    });
+
+    socket.on(SocketEvents.User.IsTyping, () => {
+      set({ isTyping: true });
+    });
+
+    socket.on(SocketEvents.User.IsNotTyping, () => {
+      set({ isTyping: false });
+    });
+
+    socket.on(SocketEvents.User.Status, (data: UserStatus) => {
+      if (data && data.userId)
+        set((state) => ({
+          userStatus: {
+            ...state.userStatus,
+            [data.userId as string]: data.status.toLowerCase() as Status,
+          },
+        }));
+    });
+
+    // Connect socket and store it in state
+    socket.connect();
+    set({ socket });
   },
 
-  sendSocketMessage: (messageData: Message) => {
-    console.log("Sending message", messageData);
-    socket.emit(SocketEvent.Messages.New, messageData);
-  },
-
-  setMessagesFromDB: (messages) => {
-    set({ messages });
-  },
-
-  setNewMessage: (message) => {
-    set((state) => ({ messages: [...state.messages, message] }));
-  },
-
+  // Disconnect socket
   disconnect: () => {
-    socket.off(SocketEvent.Connect.Init);
-    socket.off(SocketEvent.Disconnect);
-    socket.disconnect();
-    set({ isConnected: false });
+    const { socket } = get();
+    if (socket) {
+      socket.disconnect();
+      set({ socket: null, isConnected: false });
+    }
+  },
+
+  // Clean up event listeners
+  cleanup: () => {
+    const { socket } = get();
+    if (socket) {
+      console.log("Cleaning up socket events");
+      socket.off(SocketEvents.Connect.Init);
+      socket.off(SocketEvents.Connect.Error);
+      socket.off(SocketEvents.Connect.Connected);
+      socket.off(SocketEvents.Connect.Disconnect);
+    }
+  },
+
+  // State setters
+  setIsConnected: (isConnected) => set({ isConnected }),
+  setMessagesFromDB: (messages) => set({ messages }),
+  setNewMessage: (message) =>
+    set((state) => ({ messages: [...state.messages, message] })),
+
+  // Socket event emitters
+  emitMessage: (message) => {
+    const { socket } = get();
+    socket?.emit(SocketEvents.Messages.New, message);
+  },
+  emitJoinChat: (chatId) => {
+    const { socket } = get();
+    socket?.emit(SocketEvents.Chat.Join, chatId);
+  },
+  emitLeaveChat: (chatId) => {
+    const { socket } = get();
+    socket?.emit(SocketEvents.Chat.Leave, chatId);
+  },
+  emitTyping: (chatId, isTyping) => {
+    const { socket } = get();
+    const userId = localStorage.getItem("userId");
+    const event = isTyping
+      ? SocketEvents.User.IsTyping
+      : SocketEvents.User.IsNotTyping;
+    socket?.emit(event, { userId, chatId });
   },
 }));

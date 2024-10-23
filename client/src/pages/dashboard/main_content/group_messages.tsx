@@ -1,21 +1,25 @@
 import { Loader } from "lucide-react";
 import { motion } from "framer-motion";
+import { useUser } from "@clerk/clerk-react";
 import { useEffect, useRef, useState } from "react";
 
 import { cn, formatDate } from "@/lib/utils";
+import { User } from "@/lib/types";
 import { useSocketStore } from "@/lib/store";
 import { getMessagesFromDB } from "@/lib/actions";
 
 import FadeUp from "@/components/fade_up";
 import { useCurrentChatStore } from "../stores/chat";
+import { useProfilePanelStore } from "../stores/side-panels";
 import { useScrollToBottom } from "@/hooks/use_scrollToBottom";
-import { MessagePreview } from "./message_preview";
 
-export function Messages() {
+export function GroupMessages() {
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const { setUserProfile } = useProfilePanelStore();
   const { currentChatUser, currentChat } = useCurrentChatStore();
   const { messages, setMessagesFromDB, emitJoinChat } = useSocketStore();
+  const { user } = useUser();
 
   useEffect(() => {
     const fetchMessages = async () => {
@@ -60,7 +64,6 @@ export function Messages() {
     .split(" ")
     .map((n: string) => n[0])
     .join("");
-
   if (messages.length === 0) {
     return (
       <div className="flex h-full flex-col items-center justify-center text-center font-medium">
@@ -72,9 +75,8 @@ export function Messages() {
           />
         </div>
         <p className="text-sm text-muted-foreground xl:text-lg">
-          This is the beginning of your chat with
+          This is the beginning of this group chat.
         </p>
-        <p className="text-lg xl:text-2xl">{currentChatUser.name}</p>
       </div>
     );
   }
@@ -87,7 +89,7 @@ export function Messages() {
       <motion.ul className={cn("mt-auto flex flex-col justify-between")}>
         {messages.map((message, index) => {
           const isSender = message.sender.id !== currentChatUser.id;
-          const IsSameSender =
+          const IsNextMessageFromSameUser =
             messages[index].sender.id ===
             (index > 0 && messages[index - 1].sender.id);
 
@@ -95,30 +97,52 @@ export function Messages() {
             <FadeUp
               key={message.id}
               className={cn(
-                "text-left lg:max-w-lg xl:max-w-2xl",
+                "flex flex-col text-left lg:max-w-lg xl:max-w-2xl",
                 isSender ? "items-start self-start" : "items-end self-end",
               )}
             >
-              <div data-is_same_sender={IsSameSender} className="flex flex-col">
-                <span
+              <span
+                className={cn(
+                  "text-xs font-medium text-muted-foreground",
+                  isSender ? "ml-10 self-start" : "mr-10 self-end",
+                  IsNextMessageFromSameUser ? "invisible" : "",
+                )}
+              >
+                {!isSender ? message.sender?.name : "Me"}
+              </span>
+              <div className="my-2 flex items-center gap-2">
+                <p
                   className={cn(
-                    "text-xs font-medium text-muted-foreground",
-                    isSender ? "ml-10 self-start" : "mr-10 self-end",
-                    IsSameSender ? "hidden" : "",
+                    "w-fit rounded-lg px-4 py-3 text-xs text-primary md:text-sm",
+                    isSender
+                      ? "order-1 self-start rounded-tl-none bg-primary"
+                      : "self-end rounded-tr-none bg-indigo-500",
                   )}
                 >
-                  {!isSender ? message.sender?.name : "Me"}
-                </span>
-                <MessagePreview {...message} IsSameSender={IsSameSender} />
-                <small
+                  {message.content}
+                </p>
+                <button
                   className={cn(
-                    "text-xs text-muted-foreground",
-                    isSender ? "ml-10 self-start" : "mr-10 self-end",
+                    "aspect-square size-7 self-start rounded-full bg-muted-foreground p-[2px]",
+                    IsNextMessageFromSameUser ? "invisible" : "",
                   )}
+                  onClick={() => setUserProfile(message.sender as User)}
                 >
-                  {formatDate(message.updatedAt)} {isSender ? "• Sent" : ""}
-                </small>
+                  <img
+                    src={!isSender ? message.sender?.image : user?.imageUrl}
+                    alt="profile image"
+                    className="aspect-square size-full rounded-full object-cover"
+                  />
+                </button>
               </div>
+              <small
+                className={cn(
+                  "text-xs text-primary",
+                  isSender ? "ml-10 self-start" : "mr-10 self-end",
+                )}
+              >
+                {formatDate(message.updatedAt)} {isSender ? "• Sent" : ""}
+              </small>
             </FadeUp>
           );
         })}

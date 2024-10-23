@@ -1,81 +1,75 @@
 import { useEffect } from "react";
-import { ProfilePanel } from "./profile";
-import { SidePanel } from "./side_panel";
-import { MainContent } from "./main_content";
 import {
-  RedirectToSignIn,
+  useUser,
   SignedIn,
   SignedOut,
-  useUser,
+  RedirectToSignIn,
 } from "@clerk/clerk-react";
-import { useCurrentChatStore } from "./stores/chat";
-
-const SERVER_API_URL = import.meta.env.VITE_SERVER_API;
-export type ClerkUser = {
-  id: string;
-  fullName: string;
-  emailAddresses: { emailAddress: string }[];
-  imageUrl: string;
-};
+import { useSocketStore } from "@/lib/store";
+import { ClerkUser, postUser } from "@/lib/actions";
+import { useCurrentChatStore, useGroupChatStore } from "./stores/chat";
+import { ProfilePanel } from "./profile";
+import { SidePanel } from "./side_panel";
+import { Chat } from "./chat";
+import { GroupChat } from "./group_chat";
 
 function DashboardContent() {
   const { user } = useUser();
   const { currentChatUser } = useCurrentChatStore();
-
-  const postUser = async () => {
-    if (!user) return;
-
-    const res = await fetch(`${SERVER_API_URL}/user/clerk`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        id: user.id,
-        fullName: user.fullName ?? "NA",
-        email: user.emailAddresses[0].emailAddress,
-        image: user.imageUrl,
-      }),
-    });
-    const data = await res.json();
-    const storeToken = JSON.stringify(data.token);
-    localStorage.removeItem("token");
-    localStorage.setItem("token", storeToken);
-    localStorage.setItem("userId", data.id);
-  };
+  const { currentGroupChat } = useGroupChatStore();
+  const { initSocket, cleanup, disconnect } = useSocketStore();
 
   useEffect(() => {
+    initSocket();
+
     const fetchData = async () => {
       try {
-        await postUser();
+        if (user) {
+          const data: ClerkUser = {
+            id: user.id,
+            fullName: user.fullName,
+            email: user.emailAddresses[0].emailAddress,
+            image: user.imageUrl,
+          };
+          await postUser(data);
+        }
       } catch (error) {
         console.error(error);
       }
     };
 
     fetchData();
-  }, []);
+    return () => {
+      cleanup();
+      disconnect();
+    };
+  }, [user]);
+
+  let mainContent;
+  if (!currentChatUser && !currentGroupChat) {
+    mainContent = (
+      <div className="my-auto flex flex-col items-center justify-center px-4 text-center">
+        <h1 className="text-xl font-semibold text-primary">No Active Chats</h1>
+        <p className="text-sm font-medium text-muted-foreground md:text-lg">
+          LinkUp with your friends and start chatting
+        </p>
+        <div className="mt-8 size-24 rounded-full bg-muted-foreground p-1">
+          <img src="/user.png" alt="user placeholder" />
+        </div>
+      </div>
+    );
+  } else if (currentChatUser) {
+    mainContent = <Chat />;
+  } else if (currentGroupChat) {
+    mainContent = <GroupChat />;
+  }
 
   return (
-    <main className="flex h-[inherit] bg-primary">
+    <main className="flex h-[inherit] bg-input">
       <SidePanel />
 
-      <section className="flex h-[inherit] basis-full flex-col border-x border-muted-foreground">
-        {currentChatUser?.chatId ? (
-          <MainContent />
-        ) : (
-          <div className="my-auto flex flex-col items-center justify-center px-4 text-center">
-            <h1 className="text-lg font-semibold text-muted">
-              No Active Chats
-            </h1>
-            <p className="text-sm font-medium text-muted-foreground">
-              LinkUp with your friends and start chatting
-            </p>
-            <div className="mt-8 size-20 rounded-full bg-muted-foreground p-1">
-              <img src="/user.png" alt="user placeholder" />
-            </div>
-          </div>
-        )}
+      <section className="flex h-[inherit] basis-full flex-col">
+        {mainContent}
       </section>
 
       <ProfilePanel />

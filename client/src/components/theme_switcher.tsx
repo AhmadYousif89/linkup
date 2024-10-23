@@ -1,25 +1,28 @@
-import { useState } from "react";
 import { Moon, Sun } from "lucide-react";
-
 import { Switch } from "@/components/ui/switch";
+import { useThemeStore } from "@/lib/theme_store";
 
 export function ThemeSwitcher() {
-  const [theme, setTheme] = useState("light");
+  const { theme, setTheme } = useThemeStore();
+  const systemIsDark = window.matchMedia(
+    "(prefers-color-scheme: dark)",
+  ).matches;
+  const isDark = theme === "dark" || (theme === "system" && systemIsDark);
 
   const handleThemeChange = () => {
-    setTheme((prevTheme) => (prevTheme === "light" ? "dark" : "light"));
+    setTheme(isDark ? "light" : "dark");
   };
 
   return (
     <Switch
       className="data-[state=checked]:bg-indigo-400"
-      checked={theme === "light"}
+      checked={isDark}
       onCheckedChange={handleThemeChange}
     >
-      {theme === "dark" ? (
-        <Moon className="size-3" />
+      {isDark ? (
+        <Moon className="size-3 dark:text-secondary" />
       ) : (
-        <Sun className="size-3" />
+        <Sun className="size-3 text-secondary" />
       )}
     </Switch>
   );

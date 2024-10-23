@@ -1,7 +1,7 @@
 import { User } from "@/lib/types";
 import { create } from "zustand";
 
-export type Tab = "Connect" | "Messages" | "Rooms" | "Requests" | "More" | "";
+export type Tab = "Connect" | "Messages" | "Groups" | "Requests" | "More" | "";
 type ActiveTabState = {
   activeTab: Tab;
   setActiveTab: (activeTab: Tab) => void;
@@ -12,10 +12,9 @@ export const useActiveTabStore = create<ActiveTabState>((set) => ({
   setActiveTab: (activeTab) => set({ activeTab }),
 }));
 
-export type Friend = User & { sent: boolean };
 type UserFriendRequestState = {
-  friendRequests: Friend[];
-  setFriendRequests: (friendData: Friend) => void;
+  friendRequests: User[];
+  setFriendRequests: (friendData: User) => void;
 };
 
 export const useFriendRequestStore = create<UserFriendRequestState>((set) => ({
@@ -35,22 +34,16 @@ export const useFriendRequestStore = create<UserFriendRequestState>((set) => ({
     }),
 }));
 
-type UserDMsState = {
-  userDMs: User[];
-  setUserDMs: (users: User[]) => void;
+type ProfilePanelState = {
+  userProfile: User | null;
+  setUserProfile: (userProfile: User | null) => void;
+  isOpen: boolean;
+  setIsOpen: (isOpen: boolean) => void;
 };
 
-export const useUserDMsStore = create<UserDMsState>((set) => ({
-  userDMs: [],
-  setUserDMs: (users) =>
-    set((state) => {
-      const updatedUserDMs = state.userDMs.map(
-        (user) => users.find((u) => u.id === user.id) || user,
-      );
-
-      const newUsers = users.filter(
-        (user) => !state.userDMs.some((u) => u.id === user.id),
-      );
-      return { userDMs: [...updatedUserDMs, ...newUsers] };
-    }),
+export const useProfilePanelStore = create<ProfilePanelState>((set) => ({
+  userProfile: null,
+  setUserProfile: (userProfile) => set({ userProfile }),
+  isOpen: window.innerWidth > 1024 ? true : false,
+  setIsOpen: (isOpen) => set({ isOpen }),
 }));
