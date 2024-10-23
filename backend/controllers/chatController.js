@@ -159,7 +159,7 @@ class ChatController {
 
     try {
       const groupChat = await Chat.create({
-        chatName: req.body.name,
+        chatName: req.body.name || 'Unnamed Group',
         users: usersIds,
         isGroupChat: true,
         groupAdmin: req.user,
@@ -209,22 +209,16 @@ class ChatController {
       chatName = 'Unnamed Group';
     }
 
-    const updatedChat = await Chat.findByIdAndUpdate(
-      chatId,
-      {
-        chatName,
-      },
-      { new: true },
-    )
+    const updatedChat = await Chat.findByIdAndUpdate(chatId, { chatName }, { new: true })
       .populate('users', '-password')
       .populate('groupAdmin', '-password');
 
     if (!updatedChat) {
       console.log('Chat not found');
       return res.status(400).json({ error: 'Chat not found' });
-    } else {
-      res.status(200).json(updatedChat);
     }
+
+    return res.status(200).json(updatedChat);
   });
 
   // Add to group
@@ -458,13 +452,7 @@ class ChatController {
       return res.status(400).json('Error: Chat not found');
     }
 
-    await Chat.findByIdAndUpdate(
-      chatId,
-      {
-        $push: { closedUsers: req.user._id },
-      },
-      { new: true },
-    );
+    await Chat.findByIdAndUpdate(chatId, { $push: { closedUsers: req.user._id } }, { new: true });
 
     return res.status(200).json({ message: 'Chat closed successfully' });
   });
